@@ -3,7 +3,7 @@ use crate::utils::utils::{to_db_display,
                         exponential_moving_average};
 use super::source::DisplaySource;
 use std::sync::mpsc;
-
+use log::{info,debug,trace};
 use std::time::{Duration, Instant};
 use embedded_graphics::{pixelcolor::BinaryColor,prelude::*,primitives::{PrimitiveStyle,Rectangle}};
 use embedded_graphics::{mono_font::{ascii::FONT_4X6,MonoTextStyle,},text::{Baseline, Text}};
@@ -58,7 +58,7 @@ impl DisplaySource for OledBars {
         let mut accumulated_values = [0.0; NUM_BANDS];
 
         while let Ok(frame) = rx_bands.recv() {
-            println!("Latency Display: {:.3} ms",
+            trace!("Latency Display: {:.3} ms",
             frame.timestamp.elapsed().as_secs_f64() * 1000.0
         );
             //Consume from channel
@@ -92,7 +92,7 @@ impl OledBars {
         self.draw_labels(bar_width);
         let t = Instant::now();
         self.display.flush().unwrap();
-        println!("flush = {:.3} ms",t.elapsed().as_secs_f64() * 1000.0);
+        trace!("Flushing to display = {:.3} ms",t.elapsed().as_secs_f64() * 1000.0);
     }
 
     fn reset_buffer(&mut self, accumulated_values: &mut [f32], count: &mut usize){

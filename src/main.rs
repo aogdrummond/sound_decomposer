@@ -11,7 +11,7 @@ use std::time::Instant;
 use std::error::Error;
 use audio::source::AudioSource;
 use display::source::DisplaySource;
-use log::info;
+use log::{info,trace};
 use env_logger::Env;
 
 fn create_audio_source(
@@ -43,14 +43,14 @@ fn process_audio(rx_chunk: mpsc::Receiver<AudioFrame>,
     let mut processor = Processor::new(audio::wav::CHUNK_SIZE);
 
     while let Ok(frame) = rx_chunk.recv() {
-        println!("Latency Processing: {:.3} ms",
+        trace!("Latency Processing: {:.3} ms",
             frame.timestamp.elapsed().as_secs_f64() * 1000.0
         );
         let start = Instant::now();
 
         let bands = processor.process(&frame.samples);
         let elapsed = start.elapsed().as_secs_f64() * 1000.0;
-        println!("Elapsed: {:.3} ms", elapsed);
+        trace!("Elapsed: {:.3} ms", elapsed);
         let frame2 = AudioFrame{timestamp: Instant::now(),
                                     samples: bands};
         if tx_bands.send(frame2).is_err() {
