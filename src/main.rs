@@ -11,7 +11,8 @@ use std::time::Instant;
 use std::error::Error;
 use audio::source::AudioSource;
 use display::source::DisplaySource;
-use log::{debug, error, info, warn};
+use log::info;
+use env_logger::Env;
 
 fn create_audio_source(
     name: &str,
