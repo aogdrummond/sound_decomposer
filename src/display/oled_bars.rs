@@ -14,7 +14,7 @@ use ssd1306::{prelude::*,I2CDisplayInterface,Ssd1306};
 // GLOBAL VARIABLES
 const NUM_BANDS: usize = 8;
 const UPDATE_INTERVAL_MS: u64 = 100;
-const BAND_LABELS: [&str; NUM_BANDS] = ["63","125","250","500","1K","2K","4K","8K"];
+const BAND_LABELS: [&str; NUM_BANDS] = ["125","250","500","1K","2K","4K","8K","16K"];
 const WIDTH : usize = 128;
 const GRAPH_HEIGHT: usize = 56;
 const I2C_PERIPHERAL_PATH: &str = "/dev/i2c-1";
