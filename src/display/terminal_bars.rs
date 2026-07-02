@@ -1,23 +1,13 @@
 use super::source::DisplaySource;
 use crate::audio::source::AudioFrame;
+use crate::bands::{NUM_BANDS,BAND_LABELS};
 use crate::utils::utils::to_db_display;
 use std::io::{stdout, Write};
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
-const NUM_BANDS: usize = 8;
 const BAR_WIDTH: usize = 50;
 
-const LABELS: [&str; NUM_BANDS] = [
-    "0-100 Hz",
-    "100-250",
-    "250-500",
-    "500-1k",
-    "1k-2k",
-    "2k-4k",
-    "4k-8k",
-    "8k-22k",
-];
 
 const BLOCKS: [&str; 9] = [
     " ",
@@ -158,7 +148,7 @@ fn draw_bars(
 
         println!(
             "{:<10} | {} {:5.1}",
-            LABELS[i],
+            BAND_LABELS[i],
             bar,
             value
         );

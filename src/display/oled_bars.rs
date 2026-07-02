@@ -10,9 +10,9 @@ use embedded_graphics::{mono_font::{ascii::FONT_4X6,MonoTextStyle,},text::{Basel
 use linux_embedded_hal::I2cdev;
 use ssd1306::mode::BufferedGraphicsMode;
 use ssd1306::{prelude::*,I2CDisplayInterface,Ssd1306};
+use crate::bands::NUM_BANDS;
 
 // GLOBAL VARIABLES
-const NUM_BANDS: usize = 8;
 const UPDATE_INTERVAL_MS: u64 = 100;
 const BAND_LABELS: [&str; NUM_BANDS] = ["125","250","500","1K","2K","4K","8K","16K"];
 const WIDTH : usize = 128;

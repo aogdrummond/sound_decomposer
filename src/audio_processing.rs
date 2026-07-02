@@ -1,8 +1,8 @@
 use rustfft::{FftPlanner, Fft};
 use rustfft::num_complex::Complex;
 use std::sync::Arc;
+use crate::bands::{CENTRAL_FREQS,NUM_BANDS};
 
-const CENTRAL_FREQS: [f32; 8] = [125.0,250.0,500.0,1000.0,2000.0,4000.0,8000.0,16000.0];
 const SAMPLE_RATE: f32 = 48_000.0;
 
 pub struct Processor {

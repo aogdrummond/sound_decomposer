@@ -111,3 +111,4 @@ cargo run -- terminal wav
 
 * Comprehensive error treatment
 * Comprehensive automated tests
+* Implementing more third/octaves
