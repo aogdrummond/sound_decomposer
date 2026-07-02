@@ -3,7 +3,7 @@ use crate::utils::utils::{to_db_display,
                         exponential_moving_average};
 use super::source::DisplaySource;
 use std::sync::mpsc;
-use log::{info,debug,trace};
+use log::trace;
 use std::time::{Duration, Instant};
 use embedded_graphics::{pixelcolor::BinaryColor,prelude::*,primitives::{PrimitiveStyle,Rectangle}};
 use embedded_graphics::{mono_font::{ascii::FONT_4X6,MonoTextStyle,},text::{Baseline, Text}};

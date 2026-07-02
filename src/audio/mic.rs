@@ -1,6 +1,6 @@
 use std::sync::mpsc;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use log::{debug,info,trace};
+use log::{debug,info};
 use super::source::AudioSource;
 use crate::configs::CHUNK_SIZE;
 

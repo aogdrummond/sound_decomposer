@@ -1,9 +1,7 @@
 use rustfft::{FftPlanner, Fft};
 use rustfft::num_complex::Complex;
 use std::sync::Arc;
-use crate::configs::{CENTRAL_FREQS,NUM_BANDS,SAMPLE_RATE};
-
-// const SAMPLE_RATE: f32 = 48_000.0;
+use crate::configs::{CENTRAL_FREQSSAMPLE_RATE};
 
 pub struct Processor {
     fft: Arc<dyn Fft<f32>>,
