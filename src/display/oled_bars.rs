@@ -10,14 +10,13 @@ use embedded_graphics::{mono_font::{ascii::FONT_4X6,MonoTextStyle,},text::{Basel
 use linux_embedded_hal::I2cdev;
 use ssd1306::mode::BufferedGraphicsMode;
 use ssd1306::{prelude::*,I2CDisplayInterface,Ssd1306};
-use crate::bands::NUM_BANDS;
+use crate::configs::{NUM_BANDS,BAND_LABELS};
 
 // GLOBAL VARIABLES
-const UPDATE_INTERVAL_MS: u64 = 100;
-const BAND_LABELS: [&str; NUM_BANDS] = ["125","250","500","1K","2K","4K","8K","16K"];
-const WIDTH : usize = 128;
-const GRAPH_HEIGHT: usize = 56;
-const I2C_PERIPHERAL_PATH: &str = "/dev/i2c-1";
+// const UPDATE_INTERVAL_MS: u64 = 100;
+// const SCREEN_WIDTH : usize = 128;
+// const GRAPH_HEIGHT: usize = 56;
+// const I2C_PERIPHERAL_PATH: &str = "/dev/i2c-1";
 
 
 pub struct OledBars {display: Ssd1306<
@@ -87,7 +86,7 @@ impl OledBars {
 
     fn draw_screen(&mut self,per_band_amplitude: &[f32]) {
         self.display.clear(BinaryColor::Off).unwrap();
-        let bar_width = WIDTH / NUM_BANDS;
+        let bar_width = SCREEN_WIDTH / NUM_BANDS;
         self.draw_bars(per_band_amplitude, bar_width);
         self.draw_labels(bar_width);
         let t = Instant::now();

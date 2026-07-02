@@ -2,7 +2,7 @@ mod audio;
 mod audio_processing;
 mod display;
 mod utils;
-mod bands;
+mod configs;
 use audio_processing::Processor;
 use std::env;
 use audio::source::AudioFrame;

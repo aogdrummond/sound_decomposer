@@ -1,25 +1,25 @@
 use super::source::DisplaySource;
 use crate::audio::source::AudioFrame;
-use crate::bands::{NUM_BANDS,BAND_LABELS};
+use crate::configs::{NUM_BANDS,BAND_LABELS,BAR_WIDTH,BLOCKS};
 use crate::utils::utils::to_db_display;
 use std::io::{stdout, Write};
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
-const BAR_WIDTH: usize = 50;
+// const BAR_WIDTH: usize = 50;
 
 
-const BLOCKS: [&str; 9] = [
-    " ",
-    "▏",
-    "▎",
-    "▍",
-    "▌",
-    "▋",
-    "▊",
-    "▉",
-    "█",
-];
+// const BLOCKS: [&str; 9] = [
+//     " ",
+//     "▏",
+//     "▎",
+//     "▍",
+//     "▌",
+//     "▋",
+//     "▊",
+//     "▉",
+//     "█",
+// ];
 
 pub struct TerminalBars {}
 
