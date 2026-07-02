@@ -41,7 +41,7 @@ fn produce_audio(
 
 fn process_audio(rx_chunk: mpsc::Receiver<AudioFrame>,
                  tx_bands: mpsc::Sender<AudioFrame>){
-    let mut processor = Processor::new(audio::wav::CHUNK_SIZE);
+    let mut processor = Processor::new(configs::CHUNK_SIZE);
 
     while let Ok(frame) = rx_chunk.recv() {
         trace!("Latency Processing: {:.3} ms",
