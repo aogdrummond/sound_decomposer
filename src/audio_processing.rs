@@ -1,8 +1,7 @@
 use rustfft::{FftPlanner, Fft};
 use rustfft::num_complex::Complex;
 use std::sync::Arc;
-
-const CENTRAL_FREQS: [f32; 8] = [125.0,250.0,500.0,1000.0,2000.0,4000.0,8000.0,16000.0];
+use crate::configs::{CENTRAL_FREQS,SAMPLE_RATE};
 
 pub struct Processor {
     fft: Arc<dyn Fft<f32>>,
@@ -21,7 +20,7 @@ impl Processor {
     }
     
 pub fn process(&mut self, chunk: &[f32]) -> Vec<f32> {
-    const SAMPLE_RATE: f32 = 48_000.0;
+    
     let band_limits = get_freq_lims(&CENTRAL_FREQS);
 
     let n = chunk.len();

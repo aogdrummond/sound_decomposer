@@ -1,8 +1,8 @@
 use std::sync::mpsc;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-
+use log::{debug,info};
 use super::source::AudioSource;
-use super::wav::CHUNK_SIZE;
+use crate::configs::CHUNK_SIZE;
 
 pub struct MicrophoneSource {
     rx: mpsc::Receiver<f32>,
@@ -19,17 +19,17 @@ impl MicrophoneSource {
             .default_input_device()
             .ok_or("No input device found")?;
 
-        println!("Supported configs:");
+        debug!("Supported configs:");
 
         for cfg in device.supported_input_configs()? {
-            println!("{:?}", cfg);
+            debug!("{:?}", cfg);
         }
 
         let config = device.default_input_config()?;
-        println!("Using device: {}", device.name()?);
-        println!("Sample format: {:?}", config.sample_format());
-        println!("Sample Rate: {}", config.sample_rate().0);
-        println!("Channels: {}", config.channels());
+        info!("Using device: {}", device.name()?);
+        info!("Sample format: {:?}", config.sample_format());
+        info!("Sample Rate: {}", config.sample_rate().0);
+        info!("Channels: {}", config.channels());
 
         let (tx, rx) = mpsc::channel::<f32>();
 

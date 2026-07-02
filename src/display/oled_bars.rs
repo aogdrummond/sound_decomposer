@@ -3,22 +3,19 @@ use crate::utils::utils::{to_db_display,
                         exponential_moving_average};
 use super::source::DisplaySource;
 use std::sync::mpsc;
-
+use log::trace;
 use std::time::{Duration, Instant};
 use embedded_graphics::{pixelcolor::BinaryColor,prelude::*,primitives::{PrimitiveStyle,Rectangle}};
 use embedded_graphics::{mono_font::{ascii::FONT_4X6,MonoTextStyle,},text::{Baseline, Text}};
 use linux_embedded_hal::I2cdev;
 use ssd1306::mode::BufferedGraphicsMode;
 use ssd1306::{prelude::*,I2CDisplayInterface,Ssd1306};
-
-// GLOBAL VARIABLES
-const NUM_BANDS: usize = 8;
-const UPDATE_INTERVAL_MS: u64 = 100;
-const BAND_LABELS: [&str; NUM_BANDS] = ["63","125","250","500","1K","2K","4K","8K"];
-const WIDTH : usize = 128;
-const GRAPH_HEIGHT: usize = 56;
-const I2C_PERIPHERAL_PATH: &str = "/dev/i2c-1";
-
+use crate::configs::{NUM_BANDS,
+    BAND_LABELS,
+    I2C_PERIPHERAL_PATH,
+    SCREEN_WIDTH,
+    GRAPH_HEIGHT,
+    UPDATE_INTERVAL_MS};
 
 pub struct OledBars {display: Ssd1306<
                     I2CInterface<I2cdev>,
@@ -58,7 +55,7 @@ impl DisplaySource for OledBars {
         let mut accumulated_values = [0.0; NUM_BANDS];
 
         while let Ok(frame) = rx_bands.recv() {
-            println!("Latency Display: {:.3} ms",
+            trace!("Latency Display: {:.3} ms",
             frame.timestamp.elapsed().as_secs_f64() * 1000.0
         );
             //Consume from channel
@@ -87,12 +84,12 @@ impl OledBars {
 
     fn draw_screen(&mut self,per_band_amplitude: &[f32]) {
         self.display.clear(BinaryColor::Off).unwrap();
-        let bar_width = WIDTH / NUM_BANDS;
+        let bar_width = SCREEN_WIDTH / NUM_BANDS;
         self.draw_bars(per_band_amplitude, bar_width);
         self.draw_labels(bar_width);
         let t = Instant::now();
         self.display.flush().unwrap();
-        println!("flush = {:.3} ms",t.elapsed().as_secs_f64() * 1000.0);
+        trace!("Flushing to display = {:.3} ms",t.elapsed().as_secs_f64() * 1000.0);
     }
 
     fn reset_buffer(&mut self, accumulated_values: &mut [f32], count: &mut usize){
