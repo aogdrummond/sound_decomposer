@@ -29,6 +29,7 @@ fn produce_audio(
     mut source: Box<dyn audio::source::AudioSource>,
     tx_chunk: mpsc::Sender<AudioFrame>)
 {
+    info!("Initiating producer thread.");
     while let Some(chunk) = source.next_chunk() {
         // Include here the timestamp
         let frame = AudioFrame{timestamp: Instant::now(),
@@ -43,6 +44,7 @@ fn process_audio(rx_chunk: mpsc::Receiver<AudioFrame>,
                  tx_bands: mpsc::Sender<AudioFrame>){
     let mut processor = Processor::new(configs::CHUNK_SIZE);
 
+    info!("Initiating processing thread.");
     while let Ok(frame) = rx_chunk.recv() {
         trace!("Latency Processing: {:.3} ms",
             frame.timestamp.elapsed().as_secs_f64() * 1000.0
@@ -77,6 +79,7 @@ fn display_results(
     mut source: Box<dyn display::source::DisplaySource>,
     rx_bands: mpsc::Receiver<AudioFrame>)
 {
+    info!("Initiating display thread.");
     source.display_results(rx_bands);
 }
 
@@ -99,8 +102,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Display destination '{}' successfully created", display_name);
 
     let (tx_chunk, rx_chunk) = mpsc::channel::<AudioFrame>();
+    info!("Source channel opened.");
     let (tx_bands, rx_bands) = mpsc::channel::<AudioFrame>();
-
+    info!("Display channel opened.");
     let producer_thread = thread::spawn(move || produce_audio(audio_source, tx_chunk));
     let processing_thread = thread::spawn(move || process_audio(rx_chunk, tx_bands));
     let display_thread = thread::spawn(move || display_results(display_source, rx_bands));

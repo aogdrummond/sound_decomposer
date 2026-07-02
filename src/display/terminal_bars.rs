@@ -6,20 +6,6 @@ use std::io::{stdout, Write};
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
-// const BAR_WIDTH: usize = 50;
-
-
-// const BLOCKS: [&str; 9] = [
-//     " ",
-//     "▏",
-//     "▎",
-//     "▍",
-//     "▌",
-//     "▋",
-//     "▊",
-//     "▉",
-//     "█",
-// ];
 
 pub struct TerminalBars {}
 

@@ -17,13 +17,6 @@ use crate::configs::{NUM_BANDS,
     GRAPH_HEIGHT,
     UPDATE_INTERVAL_MS};
 
-// GLOBAL VARIABLES
-// const UPDATE_INTERVAL_MS: u64 = 100;
-// const SCREEN_WIDTH : usize = 128;
-// const GRAPH_HEIGHT: usize = 56;
-// const I2C_PERIPHERAL_PATH: &str = "/dev/i2c-1";
-
-
 pub struct OledBars {display: Ssd1306<
                     I2CInterface<I2cdev>,
                     DisplaySize128x64,
