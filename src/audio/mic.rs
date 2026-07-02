@@ -1,8 +1,8 @@
 use std::sync::mpsc;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use log::{debug,info};
+use log::{debug,info,trace};
 use super::source::AudioSource;
-use super::wav::CHUNK_SIZE;
+use crate::configs::CHUNK_SIZE;
 
 pub struct MicrophoneSource {
     rx: mpsc::Receiver<f32>,

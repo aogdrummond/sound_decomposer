@@ -10,7 +10,12 @@ use embedded_graphics::{mono_font::{ascii::FONT_4X6,MonoTextStyle,},text::{Basel
 use linux_embedded_hal::I2cdev;
 use ssd1306::mode::BufferedGraphicsMode;
 use ssd1306::{prelude::*,I2CDisplayInterface,Ssd1306};
-use crate::configs::{NUM_BANDS,BAND_LABELS};
+use crate::configs::{NUM_BANDS,
+    BAND_LABELS,
+    I2C_PERIPHERAL_PATH,
+    SCREEN_WIDTH,
+    GRAPH_HEIGHT,
+    UPDATE_INTERVAL_MS};
 
 // GLOBAL VARIABLES
 // const UPDATE_INTERVAL_MS: u64 = 100;
