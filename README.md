@@ -32,6 +32,8 @@ Main intended setup:
 USB microphone -> Real-time DSP -> SSD1306 OLED (I²C)
 ```
 
+
+![Architecture diagram](assets/architecture-diagram.png)
 ---
 
 # Project Structure

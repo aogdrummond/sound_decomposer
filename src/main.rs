@@ -11,6 +11,7 @@ use std::time::Instant;
 use std::error::Error;
 use audio::source::AudioSource;
 use display::source::DisplaySource;
+use log::{debug, error, info, warn};
 
 fn create_audio_source(
     name: &str,
@@ -78,21 +79,29 @@ fn display_results(
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    env_logger::Builder::from_env(
+        Env::default().default_filter_or("info")
+    ).init();
+
     let args: Vec<String> = env::args().collect();
-    
-    let audio_source = create_audio_source(args.get(2).map(String::as_str).unwrap_or("mic"))?;
 
-    let display_source = create_display_source(args.get(1).map(String::as_str).unwrap_or("terminal"))?;
+    let display_name = args.get(1).map(String::as_str).unwrap_or("terminal");
+    let audio_source_name = args.get(2).map(String::as_str).unwrap_or("mic");
 
-    // Channel: Audio -> DSP
+    info!("Creating audio source '{}'", audio_source_name);
+    let audio_source = create_audio_source(audio_source_name)?;
+    info!("Audio source '{}' successfully created", audio_source_name);
+
+    info!("Creating display destination '{}'", display_name);
+    let display_source = create_display_source(display_name)?;
+    info!("Display destination '{}' successfully created", display_name);
+
     let (tx_chunk, rx_chunk) = mpsc::channel::<AudioFrame>();
-
-    // Channel: DSP -> Display
     let (tx_bands, rx_bands) = mpsc::channel::<AudioFrame>();
-  
+
     let producer_thread = thread::spawn(move || produce_audio(audio_source, tx_chunk));
     let processing_thread = thread::spawn(move || process_audio(rx_chunk, tx_bands));
-    let display_thread = thread::spawn(move || display_results(display_source,rx_bands));
+    let display_thread = thread::spawn(move || display_results(display_source, rx_bands));
 
     producer_thread.join().unwrap();
     processing_thread.join().unwrap();
