@@ -148,7 +148,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(e) => eprintln!("Logger initialization failed: {e}. Continuing without logger."),
     }
         
-    let parsed_args = parse_args()?;
+    let parsed_args = match parse_args() {
+    Ok(args) => args,
+    Err(e) => {
+        eprintln!("{e}");
+        return Ok(());
+    }
+    };
     // let display_name = parsed_args.display_name;
     // let audio_source_name = parsed_args.audio_source_name;
     
