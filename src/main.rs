@@ -32,8 +32,9 @@ fn create_audio_source(
 
 fn produce_audio(
     mut source: Box<dyn audio::source::AudioSource>,
-    tx_chunk: mpsc::Sender<AudioFrame>),
-    shutdown: Arc<AtomicBool>
+    tx_chunk: mpsc::Sender<AudioFrame>,
+    shutdown: Arc<AtomicBool>,
+)    
 {
     info!("Initiating producer thread.");
         while !shutdown.load(Ordering::SeqCst) {
