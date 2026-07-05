@@ -120,8 +120,9 @@ fn create_display_source(
 
 fn display_results(
     mut source: Box<dyn display::source::DisplaySource>,
-    rx_bands: mpsc::Receiver<AudioFrame>),
-    shutdown: Arc<AtomicBool>
+    rx_bands: mpsc::Receiver<AudioFrame>,
+    shutdown: Arc<AtomicBool>,
+)
 {
     info!("Initiating display thread.");
     source.display_results(rx_bands, shutdown);
