@@ -17,7 +17,7 @@ use std::time::{Duration, Instant};
 use std::error::Error;
 use audio::source::AudioSource;
 use display::source::DisplaySource;
-use log::{info,trace};
+use log::{info,trace,error};
 use env_logger::Env;
 
 fn create_audio_source(
@@ -144,14 +144,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match env_logger::Builder::from_env(
         Env::default().default_filter_or("info")
     ).try_init() {
-        Ok(()) => println!("Logger initialized."),
-        Err(e) => eprintln!("Logger initialization failed: {e}. Continuing without logger."),
+        Ok(()) => info!("Logger initialized."),
+        Err(e) => error!("Logger initialization failed: {e}. Continuing without logger."),
     }
         
     let parsed_args = match parse_args() {
     Ok(args) => args,
     Err(e) => {
-        eprintln!("{e}");
+        error!("{e}");
         return Ok(());
     }
     };
