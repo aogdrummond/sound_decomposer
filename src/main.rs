@@ -141,14 +141,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         shutdown_for_handler.store(true, Ordering::SeqCst);
     })?;
 
-    env_logger::Builder::from_env(
+    match env_logger::Builder::from_env(
         Env::default().default_filter_or("info")
-    ).init();
-
+    ).try_init() {
+        Ok(()) => println!("Logger initialized."),
+        Err(e) => eprintln!("Logger initialization failed: {e}. Continuing without logger."),
+    }
+    
     let args: Vec<String> = env::args().collect();
 
     let display_name = args.get(1).map(String::as_str).unwrap_or("terminal");
     let audio_source_name = args.get(2).map(String::as_str).unwrap_or("mic");
+    
     // Verificar se args são validos. Se não, quit
     info!("Creating audio source '{}'", audio_source_name);
     let audio_source = create_audio_source(audio_source_name)?;
