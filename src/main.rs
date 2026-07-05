@@ -155,9 +155,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
     };
-    // let display_name = parsed_args.display_name;
-    // let audio_source_name = parsed_args.audio_source_name;
-    
+
     // Verificar se args são validos. Se não, quit
     info!("Creating audio source '{}'", parsed_args.audio_source_name);
     let audio_source = create_audio_source(&parsed_args.audio_source_name)?;
@@ -172,13 +170,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (tx_bands, rx_bands) = mpsc::channel::<AudioFrame>();
     info!("Display channel opened.");
     
-    let producer_thread = thread::spawn(move || produce_audio(audio_source, tx_chunk, producer_shutdown));
-    let processing_thread = thread::spawn(move || process_audio(rx_chunk, tx_bands, processing_shutdown));
-    let display_thread = thread::spawn(move || display_results(display_source, rx_bands, display_shutdown));
+    let producer_thread = thread::Builder::new()
+        .name("producer".into())
+        .spawn(move || produce_audio(audio_source, tx_chunk, producer_shutdown))?;
+    info!("Producer thread spawned successfully.");
 
-    producer_thread.join().unwrap();
-    processing_thread.join().unwrap();
-    display_thread.join().unwrap();
+    let processing_thread = thread::Builder::new()
+        .name("processing".into())
+        .spawn(move || process_audio(rx_chunk, tx_bands, processing_shutdown))?;
+    info!("Processing thread spawned successfully.");
+
+    let display_thread = thread::Builder::new()
+        .name("display".into())
+        .spawn(move || display_results(display_source, rx_bands, display_shutdown))?;
+    info!("Display thread spawned successfully.");
+
+    producer_thread
+        .join()
+        .map_err(|_| "Producer thread panicked")?;
+
+    processing_thread
+        .join()
+        .map_err(|_| "Processing thread panicked")?;
+
+    display_thread
+        .join()
+        .map_err(|_| "Display thread panicked")?;
 
     Ok(())
 }
