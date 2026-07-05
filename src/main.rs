@@ -2,6 +2,7 @@ mod audio;
 mod audio_processing;
 mod display;
 mod utils;
+mod init_args;
 mod configs;
 use audio_processing::Processor;
 use std::env;
@@ -147,27 +148,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(()) => println!("Logger initialized."),
         Err(e) => eprintln!("Logger initialization failed: {e}. Continuing without logger."),
     }
-    match env_logger::Builder::from_env(
-        Env::default().default_filter_or("info")
-    ).try_init() {
-        Ok(()) => println!("Logger initialized."),
-        Err(e) => eprintln!("Logger initialization failed: {e}. Continuing without logger."),
-    }
-
-    
-    let args: Vec<String> = env::args().collect();
-
-    let display_name = args.get(1).map(String::as_str).unwrap_or("terminal");
-    let audio_source_name = args.get(2).map(String::as_str).unwrap_or("mic");
+        
+    let parsed_args = parse_args()?;
+    // let display_name = parsed_args.display_name;
+    // let audio_source_name = parsed_args.audio_source_name;
     
     // Verificar se args são validos. Se não, quit
-    info!("Creating audio source '{}'", audio_source_name);
-    let audio_source = create_audio_source(audio_source_name)?;
-    info!("Audio source '{}' successfully created", audio_source_name);
+    info!("Creating audio source '{}'", parsed_args.audio_source_name);
+    let audio_source = create_audio_source(&parsed_args.audio_source_name)?;
+    info!("Audio source '{}' successfully created", parsed_args.audio_source_name);
 
-    info!("Creating display destination '{}'", display_name);
-    let display_source = create_display_source(display_name)?;
-    info!("Display destination '{}' successfully created", display_name);
+    info!("Creating display destination '{}'", parsed_args.display_name);
+    let display_source = create_display_source(&parsed_args.display_name)?;
+    info!("Display destination '{}' successfully created", parsed_args.display_name);
 
     let (tx_chunk, rx_chunk) = mpsc::channel::<AudioFrame>();
     info!("Source channel opened.");
