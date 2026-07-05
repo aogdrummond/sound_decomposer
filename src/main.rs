@@ -132,6 +132,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     let shutdown = Arc::new(AtomicBool::new(false));
     let shutdown_for_handler = Arc::clone(&shutdown);
+    let producer_shutdown = Arc::clone(&shutdown);
+    let processing_shutdown = Arc::clone(&shutdown);
+    let display_shutdown = Arc::clone(&shutdown);
 
     ctrlc::set_handler(move || {
         info!("Ctrl+C received. Requesting shutdown...");
@@ -160,10 +163,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (tx_bands, rx_bands) = mpsc::channel::<AudioFrame>();
     info!("Display channel opened.");
     
-    let producer_thread = thread::spawn(move || produce_audio(audio_source, tx_chunk, Arc::clone(&shutdown)));
-    let processing_thread = thread::spawn(move || process_audio(rx_chunk, tx_bands, Arc::clone(&shutdown)));
-    let display_thread = thread::spawn(move || display_results(display_source, rx_bands, Arc::clone(&shutdown)));
-    
+    let producer_thread = thread::spawn(move || produce_audio(audio_source, tx_chunk, producer_shutdown));
+    let processing_thread = thread::spawn(move || process_audio(rx_chunk, tx_bands, processing_shutdown));
+    let display_thread = thread::spawn(move || display_results(display_source, rx_bands, display_shutdown));
+
     producer_thread.join().unwrap();
     processing_thread.join().unwrap();
     display_thread.join().unwrap();
