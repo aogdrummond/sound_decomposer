@@ -61,6 +61,5 @@ impl DisplaySource for TerminalDisplay {
             Err(mpsc::RecvTimeoutError::Disconnected) => break,
             }
        }
-       println!("Display finished");
     }
 }

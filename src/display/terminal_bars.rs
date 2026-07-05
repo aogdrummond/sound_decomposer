@@ -84,7 +84,6 @@ impl DisplaySource for TerminalBars {
             Err(mpsc::RecvTimeoutError::Disconnected) => break,
             }
         }
-        println!("Display finished");
     }
 }
 fn draw_bars(
