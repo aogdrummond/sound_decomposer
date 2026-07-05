@@ -2,7 +2,6 @@ mod audio;
 mod audio_processing;
 mod display;
 mod utils;
-mod init_args;
 mod configs;
 use audio_processing::Processor;
 use std::env;
@@ -12,7 +11,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     mpsc,
 };
-// use std::sync::mpsc;
+use utils::init_args::parse_args;
 use std::thread;
 use std::time::{Duration, Instant};
 use std::error::Error;
