@@ -5,7 +5,7 @@ use crate::utils::utils::to_db_display;
 use std::io::{stdout, Write};
 use std::sync::{
     Arc,
-    atomic::AtomicBool,
+    atomic::{AtomicBool,Ordering},
     mpsc,
 };
 use std::time::{Duration, Instant};
