@@ -147,6 +147,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(()) => println!("Logger initialized."),
         Err(e) => eprintln!("Logger initialization failed: {e}. Continuing without logger."),
     }
+    match env_logger::Builder::from_env(
+        Env::default().default_filter_or("info")
+    ).try_init() {
+        Ok(()) => println!("Logger initialized."),
+        Err(e) => eprintln!("Logger initialization failed: {e}. Continuing without logger."),
+    }
+
     
     let args: Vec<String> = env::args().collect();
 
