@@ -4,7 +4,6 @@ mod display;
 mod utils;
 mod configs;
 use audio_processing::Processor;
-use std::env;
 use audio::source::AudioFrame;
 use std::sync::{
     Arc,
