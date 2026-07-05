@@ -2,7 +2,12 @@ use crate::audio::source::AudioFrame;
 use crate::utils::utils::{to_db_display,
                         exponential_moving_average};
 use super::source::DisplaySource;
-use std::sync::mpsc;
+// use std::sync::mpsc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+    mpsc,
+};
 use log::trace;
 use std::time::{Duration, Instant};
 use embedded_graphics::{pixelcolor::BinaryColor,prelude::*,primitives::{PrimitiveStyle,Rectangle}};
@@ -47,26 +52,33 @@ impl OledBars {
 impl DisplaySource for OledBars {
 
     fn display_results(&mut self,
-                       rx_bands: mpsc::Receiver<AudioFrame>
+                       rx_bands: mpsc::Receiver<AudioFrame>,
+                       shutdown: Arc<AtomicBool>
     ) {
         let mut last_update = Instant::now();
         let mut band_acc = [0.0; NUM_BANDS];
         let mut count = 0usize;
         let mut accumulated_values = [0.0; NUM_BANDS];
 
-        while let Ok(frame) = rx_bands.recv() {
-            trace!("Latency Display: {:.3} ms",
-            frame.timestamp.elapsed().as_secs_f64() * 1000.0
-        );
-            //Consume from channel
-            for i in 0..NUM_BANDS {
-                band_acc[i] += frame.samples[i];
-            }
+        while !shutdown.load(Ordering::SeqCst) {
+        match rx_bands.recv_timeout(Duration::from_millis(100)) {
+            Ok(frame) => {
+                trace!("Latency Display: {:.3} ms",
+                frame.timestamp.elapsed().as_secs_f64() * 1000.0
+                );
+                //Consume from channel
+                for i in 0..NUM_BANDS {
+                    band_acc[i] += frame.samples[i];
+                }
 
-            count += 1; //Every time count increases it means a new "chunk"
-            if is_time_to_update(last_update,count) {
-                self.update_display(&mut band_acc,&mut count, &mut accumulated_values);
-                last_update = Instant::now();
+                count += 1; //Every time count increases it means a new "chunk"
+                if is_time_to_update(last_update,count) {
+                    self.update_display(&mut band_acc,&mut count, &mut accumulated_values);
+                    last_update = Instant::now();
+                }
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => continue,
+            Err(mpsc::RecvTimeoutError::Disconnected) => break,
             }
         }
     }

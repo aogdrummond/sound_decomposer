@@ -6,7 +6,12 @@ mod configs;
 use audio_processing::Processor;
 use std::env;
 use audio::source::AudioFrame;
-use std::sync::mpsc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+    mpsc,
+};
+// use std::sync::mpsc;
 use std::thread;
 use std::time::Instant;
 use std::error::Error;
@@ -27,41 +32,78 @@ fn create_audio_source(
 
 fn produce_audio(
     mut source: Box<dyn audio::source::AudioSource>,
-    tx_chunk: mpsc::Sender<AudioFrame>)
+    tx_chunk: mpsc::Sender<AudioFrame>),
+    shutdown: Arc<AtomicBool>
 {
     info!("Initiating producer thread.");
-    while let Some(chunk) = source.next_chunk() {
-        // Include here the timestamp
-        let frame = AudioFrame{timestamp: Instant::now(),
-                               samples: chunk};
-        if tx_chunk.send(frame).is_err() {
-            break;
+        while !shutdown.load(Ordering::SeqCst) {
+        match source.next_chunk() {
+            Some(chunk) => {
+                let frame = AudioFrame {
+                    timestamp: Instant::now(),
+                    samples: chunk,
+                };
+
+                if tx_chunk.send(frame).is_err() {
+                    info!("Producer: receiver dropped, stopping.");
+                    break;
+                }
+            }
+            None => {
+                info!("Producer: source ended.");
+                break;
+            }
         }
     }
 }
 
-fn process_audio(rx_chunk: mpsc::Receiver<AudioFrame>,
-                 tx_bands: mpsc::Sender<AudioFrame>){
+fn process_audio(
+    rx_chunk: mpsc::Receiver<AudioFrame>,
+    tx_bands: mpsc::Sender<AudioFrame>,
+    shutdown: Arc<AtomicBool>,
+) {
     let mut processor = Processor::new(configs::CHUNK_SIZE);
 
     info!("Initiating processing thread.");
-    while let Ok(frame) = rx_chunk.recv() {
-        trace!("Latency Processing: {:.3} ms",
-            frame.timestamp.elapsed().as_secs_f64() * 1000.0
-        );
-        let start = Instant::now();
 
-        let bands = processor.process(&frame.samples);
-        let elapsed = start.elapsed().as_secs_f64() * 1000.0;
-        trace!("Elapsed: {:.3} ms", elapsed);
-        let frame2 = AudioFrame{timestamp: Instant::now(),
-                                    samples: bands};
-        if tx_bands.send(frame2).is_err() {
-            break;
+    while !shutdown.load(Ordering::SeqCst) {
+        match rx_chunk.recv_timeout(Duration::from_millis(100)) {
+            Ok(frame) => {
+                trace!(
+                    "Latency Processing: {:.3} ms",
+                    frame.timestamp.elapsed().as_secs_f64() * 1000.0
+                );
+
+                let start = Instant::now();
+                let bands = processor.process(&frame.samples);
+                let elapsed = start.elapsed().as_secs_f64() * 1000.0;
+                trace!("Elapsed: {:.3} ms", elapsed);
+
+                let frame2 = AudioFrame {
+                    timestamp: Instant::now(),
+                    samples: bands,
+                };
+
+                if tx_bands.send(frame2).is_err() {
+                    info!("Processing: display receiver dropped, stopping.");
+                    break;
+                }
+            }
+
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                // No frame arrived during this period.
+                // That's fine: loop again and check shutdown flag.
+                continue;
+            }
+
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                info!("Processing: input channel disconnected, stopping.");
+                break;
+            }
         }
     }
 
-    println!("Processing finished");
+    info!("Processing thread exiting.");
 }
 
 fn create_display_source(
@@ -77,13 +119,23 @@ fn create_display_source(
 
 fn display_results(
     mut source: Box<dyn display::source::DisplaySource>,
-    rx_bands: mpsc::Receiver<AudioFrame>)
+    rx_bands: mpsc::Receiver<AudioFrame>),
+    shutdown: Arc<AtomicBool>
 {
     info!("Initiating display thread.");
-    source.display_results(rx_bands);
+    source.display_results(rx_bands, shutdown);
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    
+    let shutdown = Arc::new(AtomicBool::new(false));
+    let shutdown_for_handler = Arc::clone(&shutdown);
+
+    ctrlc::set_handler(move || {
+        info!("Ctrl+C received. Requesting shutdown...");
+        shutdown_for_handler.store(true, Ordering::SeqCst);
+    })?;
+
     env_logger::Builder::from_env(
         Env::default().default_filter_or("info")
     ).init();
@@ -92,7 +144,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let display_name = args.get(1).map(String::as_str).unwrap_or("terminal");
     let audio_source_name = args.get(2).map(String::as_str).unwrap_or("mic");
-
+    // Verificar se args são validos. Se não, quit
     info!("Creating audio source '{}'", audio_source_name);
     let audio_source = create_audio_source(audio_source_name)?;
     info!("Audio source '{}' successfully created", audio_source_name);
@@ -105,10 +157,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Source channel opened.");
     let (tx_bands, rx_bands) = mpsc::channel::<AudioFrame>();
     info!("Display channel opened.");
-    let producer_thread = thread::spawn(move || produce_audio(audio_source, tx_chunk));
-    let processing_thread = thread::spawn(move || process_audio(rx_chunk, tx_bands));
-    let display_thread = thread::spawn(move || display_results(display_source, rx_bands));
+    //
+    let producer_shutdown = Arc::clone(&shutdown);
+    let processing_shutdown = Arc::clone(&shutdown);
+    let display_shutdown = Arc::clone(&shutdown);
 
+    let producer_thread = thread::spawn(move || produce_audio(audio_source, tx_chunk, producer_shutdown));
+    let processing_thread = thread::spawn(move || process_audio(rx_chunk, tx_bands, processing_shutdown));
+    let display_thread = thread::spawn(move || display_results(display_source, rx_bands, display_shutdown));
+    //
     producer_thread.join().unwrap();
     processing_thread.join().unwrap();
     display_thread.join().unwrap();
