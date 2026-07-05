@@ -13,7 +13,7 @@ use std::sync::{
 };
 // use std::sync::mpsc;
 use std::thread;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use std::error::Error;
 use audio::source::AudioSource;
 use display::source::DisplaySource;

@@ -1,5 +1,9 @@
 use super::source::DisplaySource;
-use std::sync::mpsc;
+use std::sync::{
+    Arc,
+    atomic::AtomicBool,
+    mpsc,
+};
 use crate::audio::source::AudioFrame;
 use crate::utils::utils::to_db_display;
 use std::time::{Duration, Instant};
@@ -13,7 +17,7 @@ impl TerminalDisplay{
 }
 
 impl DisplaySource for TerminalDisplay {
-    fn display_results(&mut self, rx_bands: mpsc::Receiver<AudioFrame>){
+    fn display_results(&mut self, rx_bands: mpsc::Receiver<AudioFrame>,shutdown: Arc<AtomicBool>){
 
         let mut last_update = Instant::now();
         let mut band_acc = vec![0.0f32; 8];

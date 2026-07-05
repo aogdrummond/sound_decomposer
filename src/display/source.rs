@@ -1,4 +1,8 @@
-use std::sync::mpsc;
+use std::sync::{
+    Arc,
+    atomic::AtomicBool,
+    mpsc,
+};
 use super::super::audio::source::AudioFrame;
 
 pub trait DisplaySource: Send {

@@ -3,7 +3,11 @@ use crate::audio::source::AudioFrame;
 use crate::configs::{NUM_BANDS,BAND_LABELS,BAR_WIDTH,BLOCKS};
 use crate::utils::utils::to_db_display;
 use std::io::{stdout, Write};
-use std::sync::mpsc;
+use std::sync::{
+    Arc,
+    atomic::AtomicBool,
+    mpsc,
+};
 use std::time::{Duration, Instant};
 
 
@@ -23,7 +27,8 @@ impl DisplaySource for TerminalBars {
 
     fn display_results(
         &mut self,
-        rx_bands: mpsc::Receiver<AudioFrame>
+        rx_bands: mpsc::Receiver<AudioFrame>,
+        shutdown: Arc<AtomicBool>
     ) {
 
         let mut last_update = Instant::now();
