@@ -39,51 +39,54 @@ impl DisplaySource for TerminalBars {
         let mut displayed = vec![0.0f32; NUM_BANDS];
         let mut peaks = vec![0.0f32; NUM_BANDS];
 
-        while let Ok(bands) = rx_bands.recv() {
-
-            for i in 0..NUM_BANDS {
-                band_acc[i] += bands.samples[i];
-            }
-
-            count += 1;
-
-            if last_update.elapsed() >= Duration::from_millis(100)
-                && count > 0
-            {
-                last_update = Instant::now();
-
-                let mut avg = vec![0.0f32; NUM_BANDS];
-
+        while !shutdown.load(Ordering::SeqCst) {
+        match rx_bands.recv_timeout(Duration::from_millis(100)) {
+            Ok(bands) => {
                 for i in 0..NUM_BANDS {
-
-                    avg[i] = to_db_display(
-                        band_acc[i] / count as f32
-                    );
-
-                    // Exponential smoothing
-                    displayed[i] =
-                        0.8 * displayed[i]
-                        + 0.2 * avg[i];
-
-                    // Peak hold with decay
-                    peaks[i] *= 0.97;
-
-                    if displayed[i] > peaks[i] {
-                        peaks[i] = displayed[i];
-                    }
+                    band_acc[i] += bands.samples[i];
                 }
 
-                draw_bars(&displayed, &peaks);
+                count += 1;
 
-                band_acc.fill(0.0);
-                count = 0;
+                if last_update.elapsed() >= Duration::from_millis(100)
+                    && count > 0
+                {
+                    last_update = Instant::now();
+
+                    let mut avg = vec![0.0f32; NUM_BANDS];
+
+                    for i in 0..NUM_BANDS {
+
+                        avg[i] = to_db_display(
+                            band_acc[i] / count as f32
+                        );
+
+                        // Exponential smoothing
+                        displayed[i] =
+                            0.8 * displayed[i]
+                            + 0.2 * avg[i];
+
+                        // Peak hold with decay
+                        peaks[i] *= 0.97;
+
+                        if displayed[i] > peaks[i] {
+                            peaks[i] = displayed[i];
+                        }
+                    }
+
+                    draw_bars(&displayed, &peaks);
+
+                    band_acc.fill(0.0);
+                    count = 0;
+                }
+                }
+            Err(mpsc::RecvTimeoutError::Timeout) => continue,
+            Err(mpsc::RecvTimeoutError::Disconnected) => break,
             }
         }
-
         println!("Display finished");
     }
 }
-
 fn draw_bars(
     bands: &[f32],
     peaks: &[f32],
