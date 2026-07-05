@@ -8,8 +8,8 @@ const VALID_DISPLAYS: &[&str] = &["terminal", "bars", "oled"];
 const VALID_AUDIO_SOURCES: &[&str] = &["mic", "wav"];
 
 pub struct AppArgs {
-    display_name: String,
-    audio_source_name: String,
+    pub display_name: String,
+    pub audio_source_name: String,
 }
 
 pub fn parse_args() -> Result<AppArgs, Box<dyn Error>> {
