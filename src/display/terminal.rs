@@ -1,7 +1,7 @@
 use super::source::DisplaySource;
 use std::sync::{
     Arc,
-    atomic::AtomicBool,
+    atomic::{AtomicBool, Ordering},
     mpsc,
 };
 use crate::audio::source::AudioFrame;
@@ -25,7 +25,7 @@ impl DisplaySource for TerminalDisplay {
 
     while !shutdown.load(Ordering::SeqCst) {
         match rx_bands.recv_timeout(Duration::from_millis(100)) {
-            Ok(frame) => {
+            Ok(bands) => {
                 for i in 0..bands.samples.len() {
                     band_acc[i] += bands.samples[i];
                 }
