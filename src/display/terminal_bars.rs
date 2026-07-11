@@ -25,6 +25,7 @@ impl TerminalBars {
 
 impl DisplaySource for TerminalBars {
     fn self_test(&mut self) -> Result<(), Box<dyn Error>>{   
+        Ok(())
     }
     fn display_results(
         &mut self,

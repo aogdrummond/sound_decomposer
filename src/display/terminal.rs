@@ -18,7 +18,8 @@ impl TerminalDisplay{
 
 impl DisplaySource for TerminalDisplay {
     fn self_test(&mut self) -> Result<(), Box<dyn Error>>{
-        
+        Ok(())
+    }
     }
     fn display_results(&mut self, rx_bands: mpsc::Receiver<AudioFrame>,shutdown: Arc<AtomicBool>){
 
