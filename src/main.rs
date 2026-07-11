@@ -16,7 +16,7 @@ use std::time::{Duration, Instant};
 use std::error::Error;
 use audio::source::AudioSource;
 use display::source::DisplaySource;
-use log::{info,trace,error};
+use log::{info,trace,error,warn};
 use env_logger::Env;
 
 fn create_audio_source(
@@ -73,7 +73,11 @@ fn process_audio(
                     "Latency Processing: {:.3} ms",
                     frame.timestamp.elapsed().as_secs_f64() * 1000.0
                 );
-
+                // Here guarantee that frame.samples ain't empty. If it is, skip.
+                if frame.samples.is_empty() {
+                    info!("Processing: received empty frame, skipping.");
+                    continue;
+                } 
                 let start = Instant::now();
                 let bands = processor.process(&frame.samples);
                 let elapsed = start.elapsed().as_secs_f64() * 1000.0;
@@ -85,8 +89,9 @@ fn process_audio(
                 };
 
                 if tx_bands.send(frame2).is_err() {
-                    info!("Processing: display receiver dropped, stopping.");
-                    break;
+                    error!("Processing: Sending data for display failed, dropping it.");
+                    // It informs it failed and then returns processing, keep trying to send forever
+                    //
                 }
             }
 
@@ -155,46 +160,38 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     };
 
-    // Verificar se args são validos. Se não, quit
     info!("Creating audio source '{}'", parsed_args.audio_source_name);
     let audio_source = create_audio_source(&parsed_args.audio_source_name)?;
+    audio_source.self_test()?;
     info!("Audio source '{}' successfully created", parsed_args.audio_source_name);
 
     info!("Creating display destination '{}'", parsed_args.display_name);
     let display_source = create_display_source(&parsed_args.display_name)?;
     info!("Display destination '{}' successfully created", parsed_args.display_name);
-
+    display.self_test()?;
+    
     let (tx_chunk, rx_chunk) = mpsc::channel::<AudioFrame>();
     info!("Source channel opened.");
     let (tx_bands, rx_bands) = mpsc::channel::<AudioFrame>();
     info!("Display channel opened.");
     
-    let producer_thread = thread::Builder::new()
-        .name("producer".into())
+    let producer_thread = thread::Builder::new().name("producer".into())
         .spawn(move || produce_audio(audio_source, tx_chunk, producer_shutdown))?;
     info!("Producer thread spawned successfully.");
 
-    let processing_thread = thread::Builder::new()
-        .name("processing".into())
+    let processing_thread = thread::Builder::new().name("processing".into())
         .spawn(move || process_audio(rx_chunk, tx_bands, processing_shutdown))?;
     info!("Processing thread spawned successfully.");
 
-    let display_thread = thread::Builder::new()
-        .name("display".into())
+    let display_thread = thread::Builder::new().name("display".into())
         .spawn(move || display_results(display_source, rx_bands, display_shutdown))?;
     info!("Display thread spawned successfully.");
 
-    producer_thread
-        .join()
-        .map_err(|_| "Producer thread panicked")?;
+    producer_thread.join().map_err(|_| "Producer thread panicked")?;
 
-    processing_thread
-        .join()
-        .map_err(|_| "Processing thread panicked")?;
+    processing_thread.join().map_err(|_| "Processing thread panicked")?;
 
-    display_thread
-        .join()
-        .map_err(|_| "Display thread panicked")?;
+    display_thread.join().map_err(|_| "Display thread panicked")?;
 
     Ok(())
 }

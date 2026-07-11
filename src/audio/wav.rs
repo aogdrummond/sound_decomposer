@@ -15,34 +15,36 @@ impl WavSource {
 
         Ok(Self {samples: reader.into_samples::<i16>()})
     }
+    fn reopen(&mut self) -> Result<(), hound::Error> {
+        let reader = WavReader::open(&self.path)?;
+        self.samples = reader.into_samples::<i16>();
+        Ok(())
+    }
 }
 
 impl AudioSource for WavSource {
     fn next_chunk(&mut self) -> Option<Vec<f32>> {
-
         let mut chunk = Vec::with_capacity(CHUNK_SIZE);
 
-        for _ in 0..CHUNK_SIZE {
-
+        while chunk.len() < CHUNK_SIZE {
             match self.samples.next() {
-
                 Some(Ok(sample)) => {
-                    chunk.push(
-                        sample as f32 /
-                        i16::MAX as f32
-                    );
+                    chunk.push(sample as f32 / i16::MAX as f32);
                 }
 
-                Some(Err(_)) => return None,
+                Some(Err(_)) => {
+                    return None;
+                }
 
-                None => break,
+                None => {
+                    // EOF reached: reopen and continue reading from the beginning
+                    if self.reopen().is_err() {
+                        return None;
+                    }
+                }
             }
         }
 
-        if chunk.is_empty() {
-            None
-        } else {
-            Some(chunk)
-        }
+        Some(chunk)
     }
 }

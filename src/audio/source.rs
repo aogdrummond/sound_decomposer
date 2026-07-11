@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 pub trait AudioSource: Send {
+    fn self_test(&mut self) -> Result<(), Box<dyn Error>>;
     fn next_chunk(&mut self) -> Option<Vec<f32>>;
 }
 

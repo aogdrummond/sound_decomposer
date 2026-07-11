@@ -51,6 +51,22 @@ impl OledBars {
 
 impl DisplaySource for OledBars {
 
+    fn self_test(&mut self) -> Result<(), Box<dyn Error>> {
+        self.display.clear(BinaryColor::Off)?;
+
+        Rectangle::new(Point::new(0, 0), Size::new(128, 64))
+            .into_styled(PrimitiveStyle::with_fill(BinaryColor::On))
+            .draw(&mut self.display)?;
+
+        self.display.flush()?;
+
+        std::thread::sleep(Duration::from_secs(1));
+
+        self.display.clear(BinaryColor::Off)?;
+        self.display.flush()?;
+
+        Ok(())
+    }
     fn display_results(&mut self,
                        rx_bands: mpsc::Receiver<AudioFrame>,
                        shutdown: Arc<AtomicBool>

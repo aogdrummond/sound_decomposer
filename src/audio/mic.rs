@@ -69,6 +69,30 @@ impl MicrophoneSource {
 
 impl AudioSource for MicrophoneSource {
 
+    fn self_test(&mut self) -> Result<(), Box<dyn Error>> {
+
+        let mut rms = 0.0;
+
+        for _ in 0..5000 {
+            let s = self.rx.recv_timeout(Duration::from_secs(2))?;
+            rms += s*s;
+        }
+
+        rms = (rms / 5000.0).sqrt();
+
+        println!("Mic RMS = {}", rms);
+        
+        let timeout = Duration::from_secs(2);
+
+        match self.rx.recv_timeout(timeout) {
+            Ok(sample) => {
+                println!("Received sample {}", sample);
+                Ok(())
+            }
+            Err(_) => Err("No microphone samples received".into()),
+        }
+    }
+
     fn next_chunk(&mut self) -> Option<Vec<f32>> {
 
         let mut chunk = Vec::with_capacity(CHUNK_SIZE);

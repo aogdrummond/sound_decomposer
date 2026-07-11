@@ -18,7 +18,9 @@ impl Processor {
             buffer: vec![Complex::new(0.0, 0.0); size],
         }
     }
-    
+// Se chunk = 0, pula
+// Prepare the handling to the upper layer, so I
+// can guarantee that this function is called only with samples    
 pub fn process(&mut self, chunk: &[f32]) -> Vec<f32> {
     
     let band_limits = get_freq_lims(&CENTRAL_FREQS);
@@ -60,9 +62,7 @@ pub fn process(&mut self, chunk: &[f32]) -> Vec<f32> {
 
     for i in 0..band_limits.len() {
         if band_counts[i] > 0 {
-            band_values[i] =
-                     band_power[i].sqrt();
-                // (band_power[i] / band_counts[i] as f32).sqrt();
+            band_values[i] = band_power[i].sqrt();
         }
         
     }
@@ -71,6 +71,9 @@ pub fn process(&mut self, chunk: &[f32]) -> Vec<f32> {
 }
 }
 pub fn get_freq_lims(central_freqs: &[f32]) -> Vec<(f32, f32)> {
+    //(Panics if false)
+    assert!(!central_freqs.is_empty(),"ERROR: vector 'central_freqs' cannot be empty.");
+    
     let mut frequencies = Vec::new();
 
     let mut lower_edge = 0.0;
