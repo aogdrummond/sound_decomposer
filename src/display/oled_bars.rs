@@ -53,18 +53,18 @@ impl OledBars {
 impl DisplaySource for OledBars {
 
     fn self_test(&mut self) -> Result<(), Box<dyn Error>> {
-        self.display.clear(BinaryColor::Off)?;
+        self.display.clear(BinaryColor::Off).unwrap();
 
         Rectangle::new(Point::new(0, 0), Size::new(128, 64))
             .into_styled(PrimitiveStyle::with_fill(BinaryColor::On))
-            .draw(&mut self.display)?;
+            .draw(&mut self.display).unwrap();
 
-        self.display.flush()?;
+        self.display.flush().unwrap();
 
         std::thread::sleep(Duration::from_secs(1));
 
-        self.display.clear(BinaryColor::Off)?;
-        self.display.flush()?;
+        self.display.clear(BinaryColor::Off).unwrap();
+        self.display.flush().unwrap();
 
         Ok(())
     }
