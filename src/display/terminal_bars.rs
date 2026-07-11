@@ -10,7 +10,7 @@ use std::sync::{
 };
 use std::time::{Duration, Instant};
 
-
+use crate::Error;
 pub struct TerminalBars {}
 
 impl TerminalBars {

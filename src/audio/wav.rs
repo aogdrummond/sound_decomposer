@@ -1,6 +1,7 @@
 use hound::WavReader;
 use super::source::AudioSource;
 use crate::configs::{WAV_FILE,CHUNK_SIZE};
+use crate::Error;
 
 // pub const CHUNK_SIZE:usize = 4096;
 // static WAV_FILE: &str = "./data/file_example_WAV_2MG.wav";
@@ -24,7 +25,7 @@ impl WavSource {
 
 impl AudioSource for WavSource {
     fn self_test(&mut self) -> Result<(), Box<dyn Error>>{
-        
+
     }
     fn next_chunk(&mut self) -> Option<Vec<f32>> {
         let mut chunk = Vec::with_capacity(CHUNK_SIZE);
