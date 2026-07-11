@@ -168,8 +168,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Creating display destination '{}'", parsed_args.display_name);
     let display_source = create_display_source(&parsed_args.display_name)?;
     info!("Display destination '{}' successfully created", parsed_args.display_name);
-    display.self_test()?;
-    
+    display_source.self_test()?;
+
     let (tx_chunk, rx_chunk) = mpsc::channel::<AudioFrame>();
     info!("Source channel opened.");
     let (tx_bands, rx_bands) = mpsc::channel::<AudioFrame>();

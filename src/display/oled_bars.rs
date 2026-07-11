@@ -1,3 +1,4 @@
+use crate::Error;
 use crate::audio::source::AudioFrame;
 use crate::utils::utils::{to_db_display,
                         exponential_moving_average};

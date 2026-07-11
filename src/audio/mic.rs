@@ -1,6 +1,8 @@
 use std::sync::mpsc;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use log::{debug,info};
+use crate::Error;
+use crate::Duration;
 use super::source::AudioSource;
 use crate::configs::CHUNK_SIZE;
 
@@ -81,7 +83,7 @@ impl AudioSource for MicrophoneSource {
         rms = (rms / 5000.0).sqrt();
 
         println!("Mic RMS = {}", rms);
-        
+
         let timeout = Duration::from_secs(2);
 
         match self.rx.recv_timeout(timeout) {

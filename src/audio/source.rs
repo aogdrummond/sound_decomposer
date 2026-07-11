@@ -1,4 +1,5 @@
 use std::time::Instant;
+use crate::Error;
 
 pub trait AudioSource: Send {
     fn self_test(&mut self) -> Result<(), Box<dyn Error>>;

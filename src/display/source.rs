@@ -3,6 +3,7 @@ use std::sync::{
     atomic::AtomicBool,
     mpsc,
 };
+use crate::Error;
 use super::super::audio::source::AudioFrame;
 
 pub trait DisplaySource: Send {
