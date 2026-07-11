@@ -24,7 +24,8 @@ impl TerminalBars {
 }
 
 impl DisplaySource for TerminalBars {
-
+    fn self_test(&mut self) -> Result<(), Box<dyn Error>>{   
+    }
     fn display_results(
         &mut self,
         rx_bands: mpsc::Receiver<AudioFrame>,

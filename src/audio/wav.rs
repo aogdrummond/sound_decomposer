@@ -23,6 +23,9 @@ impl WavSource {
 }
 
 impl AudioSource for WavSource {
+    fn self_test(&mut self) -> Result<(), Box<dyn Error>>{
+        
+    }
     fn next_chunk(&mut self) -> Option<Vec<f32>> {
         let mut chunk = Vec::with_capacity(CHUNK_SIZE);
 
