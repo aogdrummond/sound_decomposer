@@ -72,6 +72,7 @@ impl MicrophoneSource {
 impl AudioSource for MicrophoneSource {
 
     fn self_test(&mut self) -> Result<(), Box<dyn Error>> {
+        info!("Inside self test");
 
         let mut rms = 0.0;
 

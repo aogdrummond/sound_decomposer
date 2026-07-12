@@ -16,7 +16,7 @@ use std::time::{Duration, Instant};
 use std::error::Error;
 use audio::source::AudioSource;
 use display::source::DisplaySource;
-use log::{info,trace,error,warn};
+use log::{info,trace,error};
 use env_logger::Env;
 
 fn create_audio_source(
