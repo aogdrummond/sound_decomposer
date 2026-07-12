@@ -19,44 +19,68 @@ use display::source::DisplaySource;
 use log::{info,trace,error,warn};
 use env_logger::Env;
 
+fn initialize_audio_source<T>(
+    mut source: T,
+) -> Result<Box<dyn AudioSource>, Box<dyn Error>>
+where
+    T: AudioSource + 'static,
+{
+    source.self_test()?;
+    Ok(Box::new(source))
+}
+
+fn initialize_with_fallback<P, B>(
+    primary_name: &str,
+    backup_name: &str,
+    primary: impl FnOnce() -> Result<P, Box<dyn Error>>,
+    backup: impl FnOnce() -> Result<B, Box<dyn Error>>,
+) -> Result<Box<dyn AudioSource>, Box<dyn Error>>
+where
+    P: AudioSource + 'static,
+    B: AudioSource + 'static,
+{
+    info!("Trying to initialize {}...", primary_name);
+
+    match primary() {
+        Ok(source) => match initialize_audio_source(source) {
+            Ok(source) => {
+                info!("{} initialized successfully.", primary_name);
+                Ok(source)
+            }
+
+            Err(e) => {
+                error!("{} self-test failed: {}", primary_name, e);
+                warn!("Falling back to {}.", backup_name);
+
+                initialize_audio_source(backup()?)
+            }
+        },
+
+        Err(e) => {
+            error!("Unable to initialize {}: {}", primary_name, e);
+            warn!("Falling back to {}.", backup_name);
+
+            initialize_audio_source(backup()?)
+        }
+    }
+}
+
 fn create_audio_source(
     name: &str,
 ) -> Result<Box<dyn AudioSource>, Box<dyn Error>> {
+
     match name {
-        "mic" => {
-            info!("Trying to initialize microphone...");
 
-            match audio::mic::MicrophoneSource::new() {
-                Ok(mut mic) => {
-                    if let Err(e) = mic.self_test() {
-                        error!("Microphone self-test failed: {e}");
-                        warn!("Falling back to WAV source.");
+        "mic" => initialize_with_fallback(
+            "Microphone",
+            "WAV source",
+            || audio::mic::MicrophoneSource::new(),
+            || audio::wav::WavSource::new(),
+        ),
 
-                        let mut wav = audio::wav::WavSource::new()?;
-                        wav.self_test()?;
-                        return Ok(Box::new(wav));
-                    }
-
-                    info!("Microphone initialized successfully.");
-                    Ok(Box::new(mic))
-                }
-
-                Err(e) => {
-                    error!("Unable to initialize microphone: {e}");
-                    warn!("Falling back to WAV source.");
-
-                    let mut wav = audio::wav::WavSource::new()?;
-                    wav.self_test()?;
-                    Ok(Box::new(wav))
-                }
-            }
-        }
-
-        "wav" => {
-            let mut wav = audio::wav::WavSource::new()?;
-            wav.self_test()?;
-            Ok(Box::new(wav))
-        }
+        "wav" => initialize_audio_source(
+            audio::wav::WavSource::new()?
+        ),
 
         other => Err(format!("Unknown audio source '{}'", other).into()),
     }
