@@ -16,7 +16,7 @@ use std::time::{Duration, Instant};
 use std::error::Error;
 use audio::source::AudioSource;
 use display::source::DisplaySource;
-use log::{info,trace,error};
+use log::{info,trace,error,warn};
 use env_logger::Env;
 
 fn create_audio_source(
@@ -158,7 +158,7 @@ fn create_display_source(
                         warn!("Falling back to terminal display.");
 
                         let mut terminal = display::terminal::TerminalDisplay::new();
-                        terminal.self_test()?;
+                        terminal?.self_test()?;
                         return Ok(Box::new(terminal));
                     }
 
@@ -180,7 +180,7 @@ fn create_display_source(
         "bars" => {
             info!("Trying to initialize bar display...");
 
-            match display::bars::BarsDisplay::new() {
+            match display::bars::TerminalBars::new() {
                 Ok(mut bars) => {
                     bars.self_test()?;
                     Ok(Box::new(bars))
