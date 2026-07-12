@@ -281,14 +281,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     info!("Creating audio source '{}'", parsed_args.audio_source_name);
-    let mut audio_source = create_audio_source(&parsed_args.audio_source_name)?;
-    // audio_source.self_test()?;
+    let audio_source = create_audio_source(&parsed_args.audio_source_name)?;
     info!("Audio source '{}' successfully created", parsed_args.audio_source_name);
 
     info!("Creating display destination '{}'", parsed_args.display_name);
-    let mut display_source = create_display_source(&parsed_args.display_name)?;
+    let display_source = create_display_source(&parsed_args.display_name)?;
     info!("Display destination '{}' successfully created", parsed_args.display_name);
-    // display_source.self_test()?;
 
     let (tx_chunk, rx_chunk) = mpsc::channel::<AudioFrame>();
     info!("Source channel opened.");
