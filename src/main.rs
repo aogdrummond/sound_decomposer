@@ -168,68 +168,79 @@ fn process_audio(
     info!("Processing thread exiting.");
 }
 
+fn initialize_display_source<T>(
+    mut source: T,
+) -> Result<Box<dyn DisplaySource>, Box<dyn Error>>
+where
+    T: DisplaySource + 'static,
+{
+    source.self_test()?;
+    Ok(Box::new(source))
+}
+
+fn initialize_display_with_fallback<P, B>(
+    primary_name: &str,
+    backup_name: &str,
+    primary: impl FnOnce() -> Result<P, Box<dyn Error>>,
+    backup: impl FnOnce() -> Result<B, Box<dyn Error>>,
+) -> Result<Box<dyn DisplaySource>, Box<dyn Error>>
+where
+    P: DisplaySource + 'static,
+    B: DisplaySource + 'static,
+{
+    info!("Trying to initialize {primary_name}...");
+
+    match primary() {
+        Ok(source) => match initialize_display_source(source) {
+            Ok(source) => {
+                info!("{primary_name} initialized successfully.");
+                Ok(source)
+            }
+
+            Err(e) => {
+                error!("{primary_name} self-test failed: {e}");
+                warn!("Falling back to {backup_name}.");
+
+                initialize_display_source(backup()?)
+            }
+        },
+
+        Err(e) => {
+            error!("Unable to initialize {primary_name}: {e}");
+            warn!("Falling back to {backup_name}.");
+
+            initialize_display_source(backup()?)
+        }
+    }
+}
+
 fn create_display_source(
     name: &str,
 ) -> Result<Box<dyn DisplaySource>, Box<dyn Error>> {
     match name {
-        "oled" => {
-            info!("Trying to initialize OLED display...");
 
-            match display::oled_bars::OledBars::new() {
-                Ok(mut oled) => {
-                    if let Err(e) = oled.self_test() {
-                        error!("OLED self-test failed: {e}");
-                        warn!("Falling back to terminal display.");
+        "oled" => initialize_display_with_fallback(
+            "OLED display",
+            "Terminal display",
+            || display::oled_bars::OledBars::new(),
+            || display::terminal::TerminalDisplay::new(),
+        ),
 
-                        let mut terminal = display::terminal::TerminalDisplay::new()?;
-                        terminal.self_test()?;
-                        return Ok(Box::new(terminal));
-                    }
+        "bars" => initialize_display_with_fallback(
+            "Bar display",
+            "Terminal display",
+            || display::terminal_bars::TerminalBars::new(),
+            || display::terminal::TerminalDisplay::new(),
+        ),
 
-                    info!("OLED initialized successfully.");
-                    Ok(Box::new(oled))
-                }
-
-                Err(e) => {
-                    error!("Unable to initialize OLED: {e}");
-                    warn!("Falling back to terminal display.");
-
-                    let mut terminal = display::terminal::TerminalDisplay::new()?;
-                    terminal.self_test()?;
-                    Ok(Box::new(terminal))
-                }
-            }
-        }
-
-        "bars" => {
-            info!("Trying to initialize bar display...");
-
-            match display::terminal_bars::TerminalBars::new() {
-                Ok(mut bars) => {
-                    bars.self_test()?;
-                    Ok(Box::new(bars))
-                }
-
-                Err(e) => {
-                    error!("Unable to initialize bar display: {e}");
-                    warn!("Falling back to terminal display.");
-
-                    let mut terminal = display::terminal::TerminalDisplay::new()?;
-                    terminal.self_test()?;
-                    Ok(Box::new(terminal))
-                }
-            }
-        }
-
-        "terminal" => {
-            let mut terminal = display::terminal::TerminalDisplay::new()?;
-            terminal.self_test()?;
-            Ok(Box::new(terminal))
-        }
+        "terminal" => initialize_display_source(
+            display::terminal::TerminalDisplay::new()?
+        ),
 
         other => Err(format!("Unknown display '{}'", other).into()),
     }
 }
+
 
 fn display_results(
     mut source: Box<dyn display::source::DisplaySource>,
