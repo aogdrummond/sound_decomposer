@@ -23,8 +23,41 @@ fn create_audio_source(
     name: &str,
 ) -> Result<Box<dyn AudioSource>, Box<dyn Error>> {
     match name {
-        "mic" => Ok(Box::new(audio::mic::MicrophoneSource::new()?)),
-        "wav" => Ok(Box::new(audio::wav::WavSource::new()?)),
+        "mic" => {
+            info!("Trying to initialize microphone...");
+
+            match audio::mic::MicrophoneSource::new() {
+                Ok(mut mic) => {
+                    if let Err(e) = mic.self_test() {
+                        error!("Microphone self-test failed: {e}");
+                        warn!("Falling back to WAV source.");
+
+                        let mut wav = audio::wav::WavSource::new()?;
+                        wav.self_test()?;
+                        return Ok(Box::new(wav));
+                    }
+
+                    info!("Microphone initialized successfully.");
+                    Ok(Box::new(mic))
+                }
+
+                Err(e) => {
+                    error!("Unable to initialize microphone: {e}");
+                    warn!("Falling back to WAV source.");
+
+                    let mut wav = audio::wav::WavSource::new()?;
+                    wav.self_test()?;
+                    Ok(Box::new(wav))
+                }
+            }
+        }
+
+        "wav" => {
+            let mut wav = audio::wav::WavSource::new()?;
+            wav.self_test()?;
+            Ok(Box::new(wav))
+        }
+
         other => Err(format!("Unknown audio source '{}'", other).into()),
     }
 }
@@ -115,9 +148,61 @@ fn create_display_source(
     name: &str,
 ) -> Result<Box<dyn DisplaySource>, Box<dyn Error>> {
     match name {
-        "terminal" => Ok(Box::new(display::terminal::TerminalDisplay::new()?)),
-        "bars" => Ok(Box::new(display::terminal_bars::TerminalBars::new()?)),
-        "oled" => Ok(Box::new(display::oled_bars::OledBars::new()?)),
+        "oled" => {
+            info!("Trying to initialize OLED display...");
+
+            match display::oled_bars::OledBars::new() {
+                Ok(mut oled) => {
+                    if let Err(e) = oled.self_test() {
+                        error!("OLED self-test failed: {e}");
+                        warn!("Falling back to terminal display.");
+
+                        let mut terminal = display::terminal::TerminalDisplay::new();
+                        terminal.self_test()?;
+                        return Ok(Box::new(terminal));
+                    }
+
+                    info!("OLED initialized successfully.");
+                    Ok(Box::new(oled))
+                }
+
+                Err(e) => {
+                    error!("Unable to initialize OLED: {e}");
+                    warn!("Falling back to terminal display.");
+
+                    let mut terminal = display::terminal::TerminalDisplay::new();
+                    terminal.self_test()?;
+                    Ok(Box::new(terminal))
+                }
+            }
+        }
+
+        "bars" => {
+            info!("Trying to initialize bar display...");
+
+            match display::bars::BarsDisplay::new() {
+                Ok(mut bars) => {
+                    bars.self_test()?;
+                    Ok(Box::new(bars))
+                }
+
+                Err(e) => {
+                    error!("Unable to initialize bar display: {e}");
+                    warn!("Falling back to terminal display.");
+
+                    let mut terminal = display::terminal::TerminalDisplay::new();
+                    terminal.self_test()?;
+                    Ok(Box::new(terminal))
+                }
+            }
+        }
+
+        "terminal" => {
+            let mut terminal = display::terminal::TerminalDisplay::new();
+            terminal.self_test()?;
+            Ok(Box::new(terminal))
+        }
+
         other => Err(format!("Unknown display '{}'", other).into()),
     }
 }
@@ -162,13 +247,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Creating audio source '{}'", parsed_args.audio_source_name);
     let mut audio_source = create_audio_source(&parsed_args.audio_source_name)?;
-    audio_source.self_test()?;
+    // audio_source.self_test()?;
     info!("Audio source '{}' successfully created", parsed_args.audio_source_name);
 
     info!("Creating display destination '{}'", parsed_args.display_name);
     let mut display_source = create_display_source(&parsed_args.display_name)?;
     info!("Display destination '{}' successfully created", parsed_args.display_name);
-    display_source.self_test()?;
+    // display_source.self_test()?;
 
     let (tx_chunk, rx_chunk) = mpsc::channel::<AudioFrame>();
     info!("Source channel opened.");

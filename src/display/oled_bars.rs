@@ -1,4 +1,5 @@
 use crate::Error;
+use log::info;
 use crate::audio::source::AudioFrame;
 use crate::utils::utils::{to_db_display,
                         exponential_moving_average};
@@ -65,7 +66,7 @@ impl DisplaySource for OledBars {
 
         self.display.clear(BinaryColor::Off).unwrap();
         self.display.flush().unwrap();
-
+        info!("Display initialization health check successful");
         Ok(())
     }
     fn display_results(&mut self,

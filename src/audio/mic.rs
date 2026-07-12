@@ -72,8 +72,7 @@ impl MicrophoneSource {
 impl AudioSource for MicrophoneSource {
 
     fn self_test(&mut self) -> Result<(), Box<dyn Error>> {
-        info!("Inside self test");
-
+    
         let mut rms = 0.0;
 
         for _ in 0..5000 {
@@ -84,12 +83,13 @@ impl AudioSource for MicrophoneSource {
         rms = (rms / 5000.0).sqrt();
 
         println!("Mic RMS = {}", rms);
-
+        // Implement here a test to verify if RMS =! 0
         let timeout = Duration::from_secs(2);
 
         match self.rx.recv_timeout(timeout) {
             Ok(sample) => {
-                println!("Received sample {}", sample);
+                info!("Microphone initialization health check successful");
+
                 Ok(())
             }
             Err(_) => Err("No microphone samples received".into()),
