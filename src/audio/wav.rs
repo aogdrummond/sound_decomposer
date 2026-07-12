@@ -7,18 +7,27 @@ use crate::Error;
 pub struct WavSource {
     samples: hound::WavIntoSamples<std::io::BufReader<std::fs::File>,i16>
 }
-
 impl WavSource {
-    pub fn new() -> Result<Self, hound::Error> {
+    pub fn new() -> Result<Self, Box<dyn Error>> {
         let reader = WavReader::open(WAV_FILE)?;
 
-        Ok(Self {samples: reader.into_samples::<i16>()})
+        Ok(Self {
+            samples: reader.into_samples::<i16>(),
+        })
     }
     fn reopen(&mut self) -> Result<(), hound::Error> {
         let reader = WavReader::open(WAV_FILE)?;
         self.samples = reader.into_samples::<i16>();
         Ok(())
     }
+}
+impl WavSource {
+    pub fn new() -> Result<Self, hound::Error> {
+        let reader = WavReader::open(WAV_FILE)?;
+
+        Ok(Self {samples: reader.into_samples::<i16>()})
+    }
+
 }
 
 impl AudioSource for WavSource {
