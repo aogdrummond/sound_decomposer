@@ -171,7 +171,7 @@ fn create_display_source(
                     warn!("Falling back to terminal display.");
 
                     let mut terminal = display::terminal::TerminalDisplay::new();
-                    terminal.self_test()?;
+                    terminal?.self_test()?;
                     Ok(Box::new(terminal))
                 }
             }
@@ -180,7 +180,7 @@ fn create_display_source(
         "bars" => {
             info!("Trying to initialize bar display...");
 
-            match display::bars::TerminalBars::new() {
+            match display::terminal_bars::TerminalBars::new() {
                 Ok(mut bars) => {
                     bars.self_test()?;
                     Ok(Box::new(bars))
@@ -191,7 +191,7 @@ fn create_display_source(
                     warn!("Falling back to terminal display.");
 
                     let mut terminal = display::terminal::TerminalDisplay::new();
-                    terminal.self_test()?;
+                    terminal?.self_test()?;
                     Ok(Box::new(terminal))
                 }
             }
@@ -199,7 +199,7 @@ fn create_display_source(
 
         "terminal" => {
             let mut terminal = display::terminal::TerminalDisplay::new();
-            terminal.self_test()?;
+            terminal?.self_test()?;
             Ok(Box::new(terminal))
         }
 
