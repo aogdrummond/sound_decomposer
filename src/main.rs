@@ -157,8 +157,8 @@ fn create_display_source(
                         error!("OLED self-test failed: {e}");
                         warn!("Falling back to terminal display.");
 
-                        let mut terminal = display::terminal::TerminalDisplay::new();
-                        terminal?.self_test()?;
+                        let mut terminal = display::terminal::TerminalDisplay::new()?;
+                        terminal.self_test()?;
                         return Ok(Box::new(terminal));
                     }
 
@@ -170,8 +170,8 @@ fn create_display_source(
                     error!("Unable to initialize OLED: {e}");
                     warn!("Falling back to terminal display.");
 
-                    let mut terminal = display::terminal::TerminalDisplay::new();
-                    terminal?.self_test()?;
+                    let mut terminal = display::terminal::TerminalDisplay::new()?;
+                    terminal.self_test()?;
                     Ok(Box::new(terminal))
                 }
             }
@@ -190,16 +190,16 @@ fn create_display_source(
                     error!("Unable to initialize bar display: {e}");
                     warn!("Falling back to terminal display.");
 
-                    let mut terminal = display::terminal::TerminalDisplay::new();
-                    terminal?.self_test()?;
+                    let mut terminal = display::terminal::TerminalDisplay::new()?;
+                    terminal.self_test()?;
                     Ok(Box::new(terminal))
                 }
             }
         }
 
         "terminal" => {
-            let mut terminal = display::terminal::TerminalDisplay::new();
-            terminal?.self_test()?;
+            let mut terminal = display::terminal::TerminalDisplay::new()?;
+            terminal.self_test()?;
             Ok(Box::new(terminal))
         }
 
