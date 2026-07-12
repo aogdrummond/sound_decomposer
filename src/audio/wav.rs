@@ -21,14 +21,6 @@ impl WavSource {
         Ok(())
     }
 }
-impl WavSource {
-    pub fn new() -> Result<Self, hound::Error> {
-        let reader = WavReader::open(WAV_FILE)?;
-
-        Ok(Self {samples: reader.into_samples::<i16>()})
-    }
-
-}
 
 impl AudioSource for WavSource {
 
