@@ -83,7 +83,7 @@ where
     }
 }
 
-fn produce_audio(
+pub fn produce_audio(
     mut source: Box<dyn AudioSource>,
     tx_chunk: mpsc::Sender<AudioFrame>,
     shutdown: Arc<AtomicBool>,
