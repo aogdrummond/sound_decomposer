@@ -17,9 +17,7 @@ impl MicrophoneSource {
 
         let host = cpal::default_host();
 
-        let device = host
-            .default_input_device()
-            .ok_or("No input device found")?;
+        let device = host.default_input_device().ok_or("No input device found")?;
 
         debug!("Supported configs:");
 
@@ -41,17 +39,17 @@ impl MicrophoneSource {
 
                 let channels = config.channels() as usize;
                 device.build_input_stream(
-                &config.into(),
-                move |data: &[f32], _| {
-                    for frame in data.chunks_exact(channels) {
-                        let sample = frame[0];
-                        let _ = tx.send(sample);
-                    }
-                },
-                move |err| {
-                    eprintln!("Audio error: {}", err);
-                },
-                None,
+                    &config.into(),
+                    move |data: &[f32], _| {
+                        for frame in data.chunks_exact(channels) {
+                            let sample = frame[0];
+                            let _ = tx.send(sample);
+                        }
+                    },
+                    move |err| {
+                        eprintln!("Audio error: {}", err);
+                    },
+                    None,
             )?
             }
     // cpal::SampleFormat::I16 => { ... }
@@ -105,7 +103,6 @@ impl AudioSource for MicrophoneSource {
             match self.rx.recv() {
 
                 Ok(sample) => chunk.push(sample),
-
                 Err(_) => return None,
             }
         }

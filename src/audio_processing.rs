@@ -13,14 +13,9 @@ impl Processor {
         let mut planner = FftPlanner::<f32>::new();
         let fft = planner.plan_fft_forward(size);
 
-        Self {
-            fft,
-            buffer: vec![Complex::new(0.0, 0.0); size],
-        }
+        Self {fft,buffer: vec![Complex::new(0.0, 0.0); size],}
     }
-// Se chunk = 0, pula
-// Prepare the handling to the upper layer, so I
-// can guarantee that this function is called only with samples    
+
 pub fn process(&mut self, chunk: &[f32]) -> Vec<f32> {
     
     let band_limits = get_freq_lims(&CENTRAL_FREQS);
@@ -95,4 +90,58 @@ pub fn get_freq_lims(central_freqs: &[f32]) -> Vec<(f32, f32)> {
     }
 
     frequencies
+}
+
+pub fn process_audio(
+    rx_chunk: mpsc::Receiver<AudioFrame>,
+    tx_bands: mpsc::Sender<AudioFrame>,
+    shutdown: Arc<AtomicBool>,
+) {
+    let mut processor = Processor::new(configs::CHUNK_SIZE);
+
+    info!("Initiating processing thread.");
+
+    while !shutdown.load(Ordering::SeqCst) {
+        match rx_chunk.recv_timeout(Duration::from_millis(100)) {
+            Ok(frame) => {
+                trace!(
+                    "Latency Processing: {:.3} ms",
+                    frame.timestamp.elapsed().as_secs_f64() * 1000.0
+                );
+                // Here guarantee that frame.samples ain't empty. If it is, skip.
+                if frame.samples.is_empty() {
+                    info!("Processing: received empty frame, skipping.");
+                    continue;
+                } 
+                let start = Instant::now();
+                let bands = processor.process(&frame.samples);
+                let elapsed = start.elapsed().as_secs_f64() * 1000.0;
+                trace!("Elapsed: {:.3} ms", elapsed);
+
+                let frame2 = AudioFrame {
+                    timestamp: Instant::now(),
+                    samples: bands,
+                };
+
+                if tx_bands.send(frame2).is_err() {
+                    error!("Processing: Sending data for display failed, dropping it.");
+                    // It informs it failed and then returns processing, keep trying to send forever
+                    //
+                }
+            }
+
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                // No frame arrived during this period.
+                // That's fine: loop again and check shutdown flag.
+                continue;
+            }
+
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                info!("Processing: input channel disconnected, stopping.");
+                break;
+            }
+        }
+    }
+
+    info!("Processing thread exiting.");
 }

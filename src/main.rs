@@ -3,88 +3,91 @@ mod audio_processing;
 mod display;
 mod utils;
 mod configs;
-use audio_processing::Processor;
-use audio::source::AudioFrame;
+
+use std::thread;
+use std::time::{Duration, Instant};
+use std::error::Error;
+use log::{info,trace,error,warn};
+use env_logger::Env;
 use std::sync::{
     Arc,
     atomic::{AtomicBool, Ordering},
     mpsc,
 };
+
+use audio_processing::process_audio;
+use audio::source::AudioFrame;
 use utils::init_args::parse_args;
-use std::thread;
-use std::time::{Duration, Instant};
-use std::error::Error;
 use audio::source::AudioSource;
 use display::source::DisplaySource;
-use log::{info,trace,error,warn};
-use env_logger::Env;
 
-fn initialize_audio_source<T>(
-    mut source: T,
-) -> Result<Box<dyn AudioSource>, Box<dyn Error>>
-where
-    T: AudioSource + 'static,
-{
-    source.self_test()?;
-    Ok(Box::new(source))
-}
+// fn initialize_audio_source<T>(
+//     mut source: T,
+// ) -> Result<Box<dyn AudioSource>, Box<dyn Error>>
+// where
+//     T: AudioSource + 'static,
+// {
+//     source.self_test()?;
+//     Ok(Box::new(source))
+// }
 
-fn initialize_with_fallback<P, B>(
-    primary_name: &str,
-    backup_name: &str,
-    primary: impl FnOnce() -> Result<P, Box<dyn Error>>,
-    backup: impl FnOnce() -> Result<B, Box<dyn Error>>,
-) -> Result<Box<dyn AudioSource>, Box<dyn Error>>
-where
-    P: AudioSource + 'static,
-    B: AudioSource + 'static,
-{
-    info!("Trying to initialize {}...", primary_name);
+// fn initialize_with_fallback<P, B>(
+//     primary_name: &str,
+//     backup_name: &str,
+//     primary: impl FnOnce() -> Result<P, Box<dyn Error>>,
+//     backup: impl FnOnce() -> Result<B, Box<dyn Error>>,
+// ) -> Result<Box<dyn AudioSource>, Box<dyn Error>>
+// where
+//     P: AudioSource + 'static,
+//     B: AudioSource + 'static,
+// {
+//     info!("Trying to initialize {}...", primary_name);
 
-    match primary() {
-        Ok(source) => match initialize_audio_source(source) {
-            Ok(source) => {
-                info!("{} initialized successfully.", primary_name);
-                Ok(source)
-            }
+//     match primary() {
+//         Ok(source) => match initialize_audio_source(source) {
+//             Ok(source) => {
+//                 info!("{} initialized successfully.", primary_name);
+//                 Ok(source)
+//             }
 
-            Err(e) => {
-                error!("{} self-test failed: {}", primary_name, e);
-                warn!("Falling back to {}.", backup_name);
+//             Err(e) => {
+//                 error!("{} self-test failed: {}", primary_name, e);
+//                 warn!("Falling back to {}.", backup_name);
 
-                initialize_audio_source(backup()?)
-            }
-        },
+//                 initialize_audio_source(backup()?)
+//             }
+//         },
 
-        Err(e) => {
-            error!("Unable to initialize {}: {}", primary_name, e);
-            warn!("Falling back to {}.", backup_name);
+//         Err(e) => {
+//             error!("Unable to initialize {}: {}", primary_name, e);
+//             warn!("Falling back to {}.", backup_name);
 
-            initialize_audio_source(backup()?)
-        }
-    }
-}
+//             initialize_audio_source(backup()?)
+//         }
+//     }
+// }
 
-fn create_audio_source(
-    name: &str,
-) -> Result<Box<dyn AudioSource>, Box<dyn Error>> {
 
-    match name {
+// fn create_audio_source(
+//     name: &str,
+// ) -> Result<Box<dyn AudioSource>, Box<dyn Error>> {
 
-        "mic" => initialize_with_fallback(
-            "Microphone",
-            "WAV source",
-            || audio::mic::MicrophoneSource::new(),
-            || audio::wav::WavSource::new(),
-        ),
+//     match name {
 
-        "wav" => initialize_audio_source(
-            audio::wav::WavSource::new()?
-        ),
+//         "mic" => initialize_with_fallback(
+//             "Microphone",
+//             "WAV source",
+//             || audio::mic::MicrophoneSource::new(),
+//             || audio::wav::WavSource::new(),
+//         ),
 
-        other => Err(format!("Unknown audio source '{}'", other).into()),
-    }
-}
+//         "wav" => initialize_audio_source(
+//             audio::wav::WavSource::new()?
+//         ),
+
+//         other => Err(format!("Unknown audio source '{}'", other).into()),
+//     }
+// }
 
 fn produce_audio(
     mut source: Box<dyn audio::source::AudioSource>,
@@ -114,132 +117,132 @@ fn produce_audio(
     }
 }
 
-fn process_audio(
-    rx_chunk: mpsc::Receiver<AudioFrame>,
-    tx_bands: mpsc::Sender<AudioFrame>,
-    shutdown: Arc<AtomicBool>,
-) {
-    let mut processor = Processor::new(configs::CHUNK_SIZE);
+// fn process_audio(
+//     rx_chunk: mpsc::Receiver<AudioFrame>,
+//     tx_bands: mpsc::Sender<AudioFrame>,
+//     shutdown: Arc<AtomicBool>,
+// ) {
+//     let mut processor = Processor::new(configs::CHUNK_SIZE);
 
-    info!("Initiating processing thread.");
+//     info!("Initiating processing thread.");
 
-    while !shutdown.load(Ordering::SeqCst) {
-        match rx_chunk.recv_timeout(Duration::from_millis(100)) {
-            Ok(frame) => {
-                trace!(
-                    "Latency Processing: {:.3} ms",
-                    frame.timestamp.elapsed().as_secs_f64() * 1000.0
-                );
-                // Here guarantee that frame.samples ain't empty. If it is, skip.
-                if frame.samples.is_empty() {
-                    info!("Processing: received empty frame, skipping.");
-                    continue;
-                } 
-                let start = Instant::now();
-                let bands = processor.process(&frame.samples);
-                let elapsed = start.elapsed().as_secs_f64() * 1000.0;
-                trace!("Elapsed: {:.3} ms", elapsed);
+//     while !shutdown.load(Ordering::SeqCst) {
+//         match rx_chunk.recv_timeout(Duration::from_millis(100)) {
+//             Ok(frame) => {
+//                 trace!(
+//                     "Latency Processing: {:.3} ms",
+//                     frame.timestamp.elapsed().as_secs_f64() * 1000.0
+//                 );
+//                 // Here guarantee that frame.samples ain't empty. If it is, skip.
+//                 if frame.samples.is_empty() {
+//                     info!("Processing: received empty frame, skipping.");
+//                     continue;
+//                 } 
+//                 let start = Instant::now();
+//                 let bands = processor.process(&frame.samples);
+//                 let elapsed = start.elapsed().as_secs_f64() * 1000.0;
+//                 trace!("Elapsed: {:.3} ms", elapsed);
 
-                let frame2 = AudioFrame {
-                    timestamp: Instant::now(),
-                    samples: bands,
-                };
+//                 let frame2 = AudioFrame {
+//                     timestamp: Instant::now(),
+//                     samples: bands,
+//                 };
 
-                if tx_bands.send(frame2).is_err() {
-                    error!("Processing: Sending data for display failed, dropping it.");
-                    // It informs it failed and then returns processing, keep trying to send forever
-                    //
-                }
-            }
+//                 if tx_bands.send(frame2).is_err() {
+//                     error!("Processing: Sending data for display failed, dropping it.");
+//                     // It informs it failed and then returns processing, keep trying to send forever
+//                     //
+//                 }
+//             }
 
-            Err(mpsc::RecvTimeoutError::Timeout) => {
-                // No frame arrived during this period.
-                // That's fine: loop again and check shutdown flag.
-                continue;
-            }
+//             Err(mpsc::RecvTimeoutError::Timeout) => {
+//                 // No frame arrived during this period.
+//                 // That's fine: loop again and check shutdown flag.
+//                 continue;
+//             }
 
-            Err(mpsc::RecvTimeoutError::Disconnected) => {
-                info!("Processing: input channel disconnected, stopping.");
-                break;
-            }
-        }
-    }
+//             Err(mpsc::RecvTimeoutError::Disconnected) => {
+//                 info!("Processing: input channel disconnected, stopping.");
+//                 break;
+//             }
+//         }
+//     }
 
-    info!("Processing thread exiting.");
-}
+//     info!("Processing thread exiting.");
+// }
 
-fn initialize_display_source<T>(
-    mut source: T,
-) -> Result<Box<dyn DisplaySource>, Box<dyn Error>>
-where
-    T: DisplaySource + 'static,
-{
-    source.self_test()?;
-    Ok(Box::new(source))
-}
+// fn initialize_display_source<T>(
+//     mut source: T,
+// ) -> Result<Box<dyn DisplaySource>, Box<dyn Error>>
+// where
+//     T: DisplaySource + 'static,
+// {
+//     source.self_test()?;
+//     Ok(Box::new(source))
+// }
 
-fn initialize_display_with_fallback<P, B>(
-    primary_name: &str,
-    backup_name: &str,
-    primary: impl FnOnce() -> Result<P, Box<dyn Error>>,
-    backup: impl FnOnce() -> Result<B, Box<dyn Error>>,
-) -> Result<Box<dyn DisplaySource>, Box<dyn Error>>
-where
-    P: DisplaySource + 'static,
-    B: DisplaySource + 'static,
-{
-    info!("Trying to initialize {primary_name}...");
+// fn initialize_display_with_fallback<P, B>(
+//     primary_name: &str,
+//     backup_name: &str,
+//     primary: impl FnOnce() -> Result<P, Box<dyn Error>>,
+//     backup: impl FnOnce() -> Result<B, Box<dyn Error>>,
+// ) -> Result<Box<dyn DisplaySource>, Box<dyn Error>>
+// where
+//     P: DisplaySource + 'static,
+//     B: DisplaySource + 'static,
+// {
+//     info!("Trying to initialize {primary_name}...");
 
-    match primary() {
-        Ok(source) => match initialize_display_source(source) {
-            Ok(source) => {
-                info!("{primary_name} initialized successfully.");
-                Ok(source)
-            }
+//     match primary() {
+//         Ok(source) => match initialize_display_source(source) {
+//             Ok(source) => {
+//                 info!("{primary_name} initialized successfully.");
+//                 Ok(source)
+//             }
 
-            Err(e) => {
-                error!("{primary_name} self-test failed: {e}");
-                warn!("Falling back to {backup_name}.");
+//             Err(e) => {
+//                 error!("{primary_name} self-test failed: {e}");
+//                 warn!("Falling back to {backup_name}.");
 
-                initialize_display_source(backup()?)
-            }
-        },
+//                 initialize_display_source(backup()?)
+//             }
+//         },
 
-        Err(e) => {
-            error!("Unable to initialize {primary_name}: {e}");
-            warn!("Falling back to {backup_name}.");
+//         Err(e) => {
+//             error!("Unable to initialize {primary_name}: {e}");
+//             warn!("Falling back to {backup_name}.");
 
-            initialize_display_source(backup()?)
-        }
-    }
-}
+//             initialize_display_source(backup()?)
+//         }
+//     }
+// }
 
-fn create_display_source(
-    name: &str,
-) -> Result<Box<dyn DisplaySource>, Box<dyn Error>> {
-    match name {
+// fn create_display_source(
+//     name: &str,
+// ) -> Result<Box<dyn DisplaySource>, Box<dyn Error>> {
+//     match name {
 
-        "oled" => initialize_display_with_fallback(
-            "OLED display",
-            "Terminal display",
-            || display::oled_bars::OledBars::new(),
-            || display::terminal::TerminalDisplay::new(),
-        ),
+//         "oled" => initialize_display_with_fallback(
+//             "OLED display",
+//             "Terminal display",
+//             || display::oled_bars::OledBars::new(),
+//             || display::terminal::TerminalDisplay::new(),
+//         ),
 
-        "bars" => initialize_display_with_fallback(
-            "Bar display",
-            "Terminal display",
-            || display::terminal_bars::TerminalBars::new(),
-            || display::terminal::TerminalDisplay::new(),
-        ),
+//         "bars" => initialize_display_with_fallback(
+//             "Bar display",
+//             "Terminal display",
+//             || display::terminal_bars::TerminalBars::new(),
+//             || display::terminal::TerminalDisplay::new(),
+//         ),
 
-        "terminal" => initialize_display_source(
-            display::terminal::TerminalDisplay::new()?
-        ),
+//         "terminal" => initialize_display_source(
+//             display::terminal::TerminalDisplay::new()?
+//         ),
 
-        other => Err(format!("Unknown display '{}'", other).into()),
-    }
-}
+//         other => Err(format!("Unknown display '{}'", other).into()),
+//     }
+// }
 
 
 fn display_results(
@@ -281,11 +284,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     info!("Creating audio source '{}'", parsed_args.audio_source_name);
-    let audio_source = create_audio_source(&parsed_args.audio_source_name)?;
+    let audio_source = audio::factory::create_audio_source(&parsed_args.audio_source_name)?;
     info!("Audio source '{}' successfully created", parsed_args.audio_source_name);
 
     info!("Creating display destination '{}'", parsed_args.display_name);
-    let display_source = create_display_source(&parsed_args.display_name)?;
+    let display_source = audio::display::create_display_source(&parsed_args.display_name)?;
     info!("Display destination '{}' successfully created", parsed_args.display_name);
 
     let (tx_chunk, rx_chunk) = mpsc::channel::<AudioFrame>();
