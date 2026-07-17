@@ -19,7 +19,6 @@ use audio_processing::process_audio;
 use audio::source::AudioFrame;
 use utils::init_args::parse_args;
 use audio::source::AudioSource;
-
 use display::source::DisplaySource;
 
 fn produce_audio(
