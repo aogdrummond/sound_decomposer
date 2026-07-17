@@ -1,4 +1,5 @@
 use std::error::Error;
+use log::{info,trace,error,warn};
 
 use crate::display::{
     source::DisplaySource,

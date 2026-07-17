@@ -1,3 +1,5 @@
+mod audio;
+
 use rustfft::{FftPlanner, Fft};
 use rustfft::num_complex::Complex;
 use std::sync::{
