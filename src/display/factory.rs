@@ -16,19 +16,19 @@ pub fn create_display_source(
         "oled" => initialize_display_with_fallback(
             "OLED display",
             "Terminal display",
-            || oled_bars::OledBars::new(),
-            || terminal::TerminalDisplay::new(),
+            || OledBars::new(),
+            || TerminalDisplay::new(),
         ),
 
         "bars" => initialize_display_with_fallback(
             "Bar display",
             "Terminal display",
-            || terminal_bars::TerminalBars::new(),
-            || terminal::TerminalDisplay::new(),
+            || TerminalBars::new(),
+            || TerminalDisplay::new(),
         ),
 
         "terminal" => initialize_display_source(
-            terminal::TerminalDisplay::new()?
+            TerminalDisplay::new()?
         ),
 
         other => Err(format!("Unknown display '{}'", other).into()),
