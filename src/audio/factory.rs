@@ -1,6 +1,6 @@
-mod wav
-mod source
-mod wav
+mod wav;
+mod source;
+mod wav;
 
 use std::error::Error;
 
