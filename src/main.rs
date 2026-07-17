@@ -19,7 +19,7 @@ use audio_processing::process_audio;
 use audio::source::AudioFrame;
 use utils::init_args::parse_args;
 use audio::source::AudioSource;
-use display::source::DisplaySource;
+use display::factory::display_results;
 
 fn produce_audio(
     mut source: Box<dyn audio::source::AudioSource>,
@@ -49,15 +49,15 @@ fn produce_audio(
     }
 }
 
-fn display_results(
-    mut source: Box<dyn display::source::DisplaySource>,
-    rx_bands: mpsc::Receiver<AudioFrame>,
-    shutdown: Arc<AtomicBool>,
-)
-{
-    info!("Initiating display thread.");
-    source.display_results(rx_bands, shutdown);
-}
+// fn display_results(
+//     mut source: Box<dyn display::source::DisplaySource>,
+//     rx_bands: mpsc::Receiver<AudioFrame>,
+//     shutdown: Arc<AtomicBool>,
+// )
+// {
+//     info!("Initiating display thread.");
+//     source.display_results(rx_bands, shutdown);
+// }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     
