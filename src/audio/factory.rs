@@ -1,7 +1,7 @@
-mod wav;
-mod source;
-mod wav;
 
+mod source;
+use wav::WavSource;
+use mic::MicrophoneSource;
 use std::error::Error;
 
 
