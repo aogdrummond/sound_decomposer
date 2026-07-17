@@ -1,5 +1,3 @@
-
-mod source;
 use wav::WavSource;
 use mic::MicrophoneSource;
 use std::error::Error;
@@ -7,11 +5,11 @@ use std::error::Error;
 
 use log::{error, info, warn};
 
-// use crate::audio::{
-//     mic::MicrophoneSource,
-//     source::AudioSource,
-//     wav::WavSource,
-// };
+use super::{
+    mic::MicrophoneSource,
+    source::AudioSource,
+    wav::WavSource,
+};
 
 
 pub fn create_audio_source(

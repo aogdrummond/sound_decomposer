@@ -1,7 +1,7 @@
 use std::error::Error;
 use log::{info,trace,error,warn};
 
-use crate::display::{
+use super::{
     source::DisplaySource,
     oled_bars::OledBars,
     terminal::TerminalDisplay,
