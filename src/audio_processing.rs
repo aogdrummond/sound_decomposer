@@ -9,7 +9,7 @@ use std::sync::{
 use log::{info,trace,error,warn};
 use std::time::{Duration, Instant};
 
-use configs::{CENTRAL_FREQS,SAMPLE_RATE};
+use crate::configs::{CENTRAL_FREQS,SAMPLE_RATE,CHUNK_SIZE};
 use crate::audio::source::AudioFrame;
 
 pub struct Processor {
@@ -106,7 +106,7 @@ pub fn process_audio(
     tx_bands: mpsc::Sender<AudioFrame>,
     shutdown: Arc<AtomicBool>,
 ) {
-    let mut processor = Processor::new(configs::CHUNK_SIZE);
+    let mut processor = Processor::new(CHUNK_SIZE);
 
     info!("Initiating processing thread.");
 
