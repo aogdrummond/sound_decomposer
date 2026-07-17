@@ -3,7 +3,7 @@ use std::error::Error;
 use log::{error, info, warn};
 use std::sync::{
     Arc,
-    atomic::{AtomicBool},
+    atomic::{AtomicBool, Ordering},
     mpsc,
 };
 
