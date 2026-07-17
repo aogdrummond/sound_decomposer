@@ -16,15 +16,15 @@ pub fn create_display_source(
         "oled" => initialize_display_with_fallback(
             "OLED display",
             "Terminal display",
-            || OledBars::new(),
-            || TerminalDisplay::new(),
+            || Ok(OledBars::new()?),
+            || Ok(TerminalDisplay::new()?),
         ),
 
         "bars" => initialize_display_with_fallback(
             "Bar display",
             "Terminal display",
-            || TerminalBars::new(),
-            || TerminalDisplay::new(),
+            || Ok(TerminalBars::new()?),
+            || Ok(TerminalDisplay::new()?),
         ),
 
         "terminal" => initialize_display_source(
