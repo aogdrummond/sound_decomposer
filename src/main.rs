@@ -19,35 +19,36 @@ use audio_processing::process_audio;
 use audio::source::AudioFrame;
 use utils::init_args::parse_args;
 use audio::source::AudioSource;
+use audio::factory::produce_audio;
 use display::source::DisplaySource;
 
-fn produce_audio(
-    mut source: Box<dyn audio::source::AudioSource>,
-    tx_chunk: mpsc::Sender<AudioFrame>,
-    shutdown: Arc<AtomicBool>,
-)    
-{
-    info!("Initiating producer thread.");
-        while !shutdown.load(Ordering::SeqCst) {
-        match source.next_chunk() {
-            Some(chunk) => {
-                let frame = AudioFrame {
-                    timestamp: Instant::now(),
-                    samples: chunk,
-                };
+// fn produce_audio(
+//     mut source: Box<dyn audio::source::AudioSource>,
+//     tx_chunk: mpsc::Sender<AudioFrame>,
+//     shutdown: Arc<AtomicBool>,
+// )    
+// {
+//     info!("Initiating producer thread.");
+//         while !shutdown.load(Ordering::SeqCst) {
+//         match source.next_chunk() {
+//             Some(chunk) => {
+//                 let frame = AudioFrame {
+//                     timestamp: Instant::now(),
+//                     samples: chunk,
+//                 };
 
-                if tx_chunk.send(frame).is_err() {
-                    info!("Producer: receiver dropped, stopping.");
-                    break;
-                }
-            }
-            None => {
-                info!("Producer: source ended.");
-                break;
-            }
-        }
-    }
-}
+//                 if tx_chunk.send(frame).is_err() {
+//                     info!("Producer: receiver dropped, stopping.");
+//                     break;
+//                 }
+//             }
+//             None => {
+//                 info!("Producer: source ended.");
+//                 break;
+//             }
+//         }
+//     }
+// }
 
 fn display_results(
     mut source: Box<dyn display::source::DisplaySource>,
