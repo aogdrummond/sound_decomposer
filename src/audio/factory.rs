@@ -17,12 +17,12 @@ pub fn create_audio_source(
         "mic" => initialize_with_fallback(
             "Microphone",
             "WAV source",
-            || audio::mic::MicrophoneSource::new(),
-            || audio::wav::WavSource::new(),
+            || mic::MicrophoneSource::new(),
+            || wav::WavSource::new(),
         ),
 
         "wav" => initialize_audio_source(
-            audio::wav::WavSource::new()?
+            wav::WavSource::new()?
         ),
 
         other => Err(format!("Unknown audio source '{}'", other).into()),

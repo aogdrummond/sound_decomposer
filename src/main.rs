@@ -288,7 +288,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Audio source '{}' successfully created", parsed_args.audio_source_name);
 
     info!("Creating display destination '{}'", parsed_args.display_name);
-    let display_source = audio::display::create_display_source(&parsed_args.display_name)?;
+    let display_source = display::factory::create_display_source(&parsed_args.display_name)?;
     info!("Display destination '{}' successfully created", parsed_args.display_name);
 
     let (tx_chunk, rx_chunk) = mpsc::channel::<AudioFrame>();

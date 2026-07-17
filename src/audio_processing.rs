@@ -1,7 +1,15 @@
 use rustfft::{FftPlanner, Fft};
 use rustfft::num_complex::Complex;
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    mpsc,
+    atomic::{AtomicBool, Ordering},
+};
+use log::{info,trace,error,warn};
+use std::time::{Duration, Instant};
+
 use crate::configs::{CENTRAL_FREQS,SAMPLE_RATE};
+use audio::source::AudioFrame;
 
 pub struct Processor {
     fft: Arc<dyn Fft<f32>>,
