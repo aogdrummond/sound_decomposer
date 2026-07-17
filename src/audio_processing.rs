@@ -9,7 +9,7 @@ use std::sync::{
 use log::{info,trace,error,warn};
 use std::time::{Duration, Instant};
 
-use crate::configs::{CENTRAL_FREQS,SAMPLE_RATE};
+use configs::{CENTRAL_FREQS,SAMPLE_RATE};
 use crate::audio::source::AudioFrame;
 
 pub struct Processor {
