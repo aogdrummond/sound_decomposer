@@ -1,6 +1,11 @@
 use std::error::Error;
 
 use log::{error, info, warn};
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool},
+    mpsc,
+};
 
 use super::{
     mic::MicrophoneSource,
@@ -73,6 +78,34 @@ where
             warn!("Falling back to {}.", backup_name);
 
             initialize_audio_source(backup()?)
+        }
+    }
+}
+
+fn produce_audio(
+    mut source: Box<dyn AudioSource>,
+    tx_chunk: mpsc::Sender<AudioFrame>,
+    shutdown: Arc<AtomicBool>,
+)    
+{
+    info!("Initiating producer thread.");
+        while !shutdown.load(Ordering::SeqCst) {
+        match source.next_chunk() {
+            Some(chunk) => {
+                let frame = AudioFrame {
+                    timestamp: Instant::now(),
+                    samples: chunk,
+                };
+
+                if tx_chunk.send(frame).is_err() {
+                    info!("Producer: receiver dropped, stopping.");
+                    break;
+                }
+            }
+            None => {
+                info!("Producer: source ended.");
+                break;
+            }
         }
     }
 }
