@@ -13,7 +13,16 @@ pub struct AppArgs {
 }
 
 pub fn parse_args() -> Result<AppArgs, Box<dyn Error>> {
-    let args: Vec<String> = env::args().skip(1).collect(); // skip program name
+
+    let args: Vec<String> = env::args().skip(1).collect();
+
+    parse_args_from(args)
+
+}
+
+pub fn parse_args_from(
+    args: Vec<String>,
+) -> Result<AppArgs, Box<dyn Error>> {
 
     match args.len() {
         0 => {
@@ -78,5 +87,102 @@ pub fn parse_args() -> Result<AppArgs, Box<dyn Error>> {
             VALID_DISPLAYS.join(", "),
             VALID_AUDIO_SOURCES.join(", ")
         ).into()),
+    }
+}
+
+///////////////////////////////////////////////////////////
+/////////////////////TESTING SECTION///////////////////////
+///////////////////////////////////////////////////////////
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    #[test]
+    fn defaults_are_used_when_no_arguments_are_given() {
+
+        let result = parse_args_from(vec![]).unwrap();
+
+        assert_eq!(result.display_name, "terminal");
+        assert_eq!(result.audio_source_name, "mic");
+    }
+
+    #[test]
+    fn valid_arguments_are_parsed() {
+
+        let result = parse_args_from(vec![
+            "oled".into(),
+            "wav".into(),
+        ]).unwrap();
+
+        assert_eq!(result.display_name, "oled");
+        assert_eq!(result.audio_source_name, "wav");
+    }
+
+    #[test]
+    fn invalid_display_returns_error() {
+
+        let result = parse_args_from(vec![
+            "banana".into(),
+            "wav".into(),
+        ]);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn invalid_audio_source_returns_error() {
+
+        let result = parse_args_from(vec![
+            "oled".into(),
+            "spotify".into(),
+        ]);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn one_argument_returns_error() {
+
+        let result = parse_args_from(vec![
+            "oled".into(),
+        ]);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn too_many_arguments_return_error() {
+
+        let result = parse_args_from(vec![
+            "oled".into(),
+            "wav".into(),
+            "extra".into(),
+        ]);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn every_valid_configuration_is_accepted() {
+
+        let displays = ["terminal", "bars", "oled"];
+        let sources = ["mic", "wav"];
+
+        for display in displays {
+            for source in sources {
+
+                let result = parse_args_from(vec![
+                    display.into(),
+                    source.into(),
+                ]);
+
+                assert!(
+                    result.is_ok(),
+                    "{} {} should be valid",
+                    display,
+                    source
+                );
+            }
+        }
     }
 }

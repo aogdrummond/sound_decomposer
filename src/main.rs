@@ -1,8 +1,11 @@
-mod audio;
-mod audio_processing;
-mod display;
-mod utils;
-mod configs;
+// mod audio;
+// mod audio_processing;
+// mod display;
+// mod utils;
+// mod configs;
+
+use sound_processor::audio_processing::process_audio;
+use sound_processor::audio::factory::produce_audio;
 
 use std::thread;
 use std::time::{Duration, Instant};
@@ -15,50 +18,13 @@ use std::sync::{
     mpsc,
 };
 
-use audio_processing::process_audio;
-use audio::source::AudioFrame;
-use utils::init_args::parse_args;
-use audio::source::AudioSource;
-use audio::factory::produce_audio;
-use display::source::DisplaySource;
-
-// fn produce_audio(
-//     mut source: Box<dyn audio::source::AudioSource>,
-//     tx_chunk: mpsc::Sender<AudioFrame>,
-//     shutdown: Arc<AtomicBool>,
-// )    
-// {
-//     info!("Initiating producer thread.");
-//         while !shutdown.load(Ordering::SeqCst) {
-//         match source.next_chunk() {
-//             Some(chunk) => {
-//                 let frame = AudioFrame {
-//                     timestamp: Instant::now(),
-//                     samples: chunk,
-//                 };
-
-//                 if tx_chunk.send(frame).is_err() {
-//                     info!("Producer: receiver dropped, stopping.");
-//                     break;
-//                 }
-//             }
-//             None => {
-//                 info!("Producer: source ended.");
-//                 break;
-//             }
-//         }
-//     }
-// }
-
-fn display_results(
-    mut source: Box<dyn display::source::DisplaySource>,
-    rx_bands: mpsc::Receiver<AudioFrame>,
-    shutdown: Arc<AtomicBool>,
-)
-{
-    info!("Initiating display thread.");
-    source.display_results(rx_bands, shutdown);
-}
+// use audio_processing::process_audio;
+use sound_processor::audio::source::AudioFrame;
+use sound_processor::utils::init_args::parse_args;
+use sound_processor::audio::source::AudioSource;
+// use audio::factory::produce_audio;
+use sound_processor::display::factory::display_results;
+use sound_processor::display::source::DisplaySource;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     
@@ -89,11 +55,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     info!("Creating audio source '{}'", parsed_args.audio_source_name);
-    let audio_source = audio::factory::create_audio_source(&parsed_args.audio_source_name)?;
+    let audio_source = sound_processor::audio::factory::create_audio_source(&parsed_args.audio_source_name)?;
     info!("Audio source '{}' successfully created", parsed_args.audio_source_name);
 
     info!("Creating display destination '{}'", parsed_args.display_name);
-    let display_source = display::factory::create_display_source(&parsed_args.display_name)?;
+    let display_source = sound_processor::display::factory::create_display_source(&parsed_args.display_name)?;
     info!("Display destination '{}' successfully created", parsed_args.display_name);
 
     let (tx_chunk, rx_chunk) = mpsc::channel::<AudioFrame>();

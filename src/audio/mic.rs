@@ -1,8 +1,8 @@
 use std::sync::mpsc;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use log::{debug,info};
-use crate::Error;
-use crate::Duration;
+ use std::error::Error;
+use std::time::Duration;
 use super::source::AudioSource;
 use crate::configs::CHUNK_SIZE;
 
@@ -109,4 +109,15 @@ impl AudioSource for MicrophoneSource {
 
         Some(chunk)
     }
+}
+
+///////////////////////////////////////////////////////////
+/////////////////////TESTING SECTION///////////////////////
+///////////////////////////////////////////////////////////
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    
 }

@@ -1,24 +1,30 @@
 use hound::WavReader;
 use super::source::AudioSource;
 use crate::configs::{WAV_FILE,CHUNK_SIZE};
-use crate::Error;
+ use std::error::Error;
 // pub const CHUNK_SIZE:usize = 4096;
 
 pub struct WavSource {
-    samples: hound::WavIntoSamples<std::io::BufReader<std::fs::File>,i16>
+    path: String,
+    samples: hound::WavIntoSamples<std::io::BufReader<std::fs::File>, i16>,
 }
+
 impl WavSource {
-    pub fn new() -> Result<Self, Box<dyn Error>> {
-        let reader = WavReader::open(WAV_FILE)?;
+    pub fn new(path: &str) -> Result<Self, Box<dyn Error>> {
+        let reader = WavReader::open(path)?;
 
         Ok(Self {
+            path: path.to_string(),
             samples: reader.into_samples::<i16>(),
         })
     }
     fn reopen(&mut self) -> Result<(), hound::Error> {
-        let reader = WavReader::open(WAV_FILE)?;
+        let reader = WavReader::open(&self.path)?;
         self.samples = reader.into_samples::<i16>();
         Ok(())
+    }
+    pub fn default() -> Result<Self, Box<dyn Error>> {
+        Self::new(WAV_FILE)
     }
 }
 

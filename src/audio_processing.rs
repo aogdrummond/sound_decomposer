@@ -154,3 +154,189 @@ pub fn process_audio(
 
     info!("Processing thread exiting.");
 }
+
+///////////////////////////////////////////////////////////
+// TESTING SECTION
+///////////////////////////////////////////////////////////
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::{
+        atomic::AtomicBool,
+        Arc,
+        mpsc,
+    };
+    use std::thread;
+    use std::time::Instant;
+
+    #[test]
+    fn processor_new_creates_correct_buffer_size() {
+        let processor = Processor::new(CHUNK_SIZE);
+
+        assert_eq!(processor.buffer.len(), CHUNK_SIZE);
+    }
+
+    #[test]
+    fn process_returns_one_value_per_band() {
+        let mut processor = Processor::new(CHUNK_SIZE);
+
+        let input = vec![0.0; CHUNK_SIZE];
+
+        let output = processor.process(&input);
+
+        assert_eq!(output.len(), CENTRAL_FREQS.len());
+    }
+
+    #[test]
+    fn process_of_silence_returns_zero_energy() {
+        let mut processor = Processor::new(CHUNK_SIZE);
+
+        let input = vec![0.0; CHUNK_SIZE];
+
+        let output = processor.process(&input);
+
+        for value in output {
+            assert!(value.abs() < 1e-6);
+        }
+    }
+
+    #[test]
+    fn process_does_not_return_nan() {
+        let mut processor = Processor::new(CHUNK_SIZE);
+
+        let input = vec![1.0; CHUNK_SIZE];
+
+        let output = processor.process(&input);
+
+        for value in output {
+            assert!(!value.is_nan());
+            assert!(value.is_finite());
+        }
+    }
+
+    #[test]
+    fn get_freq_lims_returns_same_number_of_bands() {
+        let bands = get_freq_lims(&CENTRAL_FREQS);
+
+        assert_eq!(bands.len(), CENTRAL_FREQS.len());
+    }
+
+    #[test]
+    fn get_freq_lims_are_contiguous() {
+        let bands = get_freq_lims(&CENTRAL_FREQS);
+
+        for i in 1..bands.len() {
+            assert!((bands[i - 1].1 - bands[i].0).abs() < 1e-6);
+        }
+    }
+
+    #[test]
+    fn get_freq_lims_are_increasing() {
+        let bands = get_freq_lims(&CENTRAL_FREQS);
+
+        for (low, high) in bands {
+            assert!(high > low);
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn get_freq_lims_panics_for_empty_vector() {
+        get_freq_lims(&[]);
+    }
+
+    #[test]
+    fn process_audio_processes_one_frame() {
+
+        let (tx_chunk, rx_chunk) = mpsc::channel();
+        let (tx_bands, rx_bands) = mpsc::channel();
+
+        let shutdown = Arc::new(AtomicBool::new(false));
+
+        let shutdown_thread = Arc::clone(&shutdown);
+
+        let handle = thread::spawn(move || {
+            process_audio(rx_chunk, tx_bands, shutdown_thread);
+        });
+
+        tx_chunk.send(AudioFrame {
+            timestamp: Instant::now(),
+            samples: vec![0.0; CHUNK_SIZE],
+        }).unwrap();
+
+        let result = rx_bands.recv_timeout(Duration::from_secs(1));
+
+        assert!(result.is_ok());
+
+        shutdown.store(true, Ordering::SeqCst);
+
+        drop(tx_chunk);
+
+        handle.join().unwrap();
+    }
+
+    #[test]
+    fn process_audio_skips_empty_frames() {
+
+        let (tx_chunk, rx_chunk) = mpsc::channel();
+        let (tx_bands, rx_bands) = mpsc::channel();
+
+        let shutdown = Arc::new(AtomicBool::new(false));
+
+        let shutdown_thread = Arc::clone(&shutdown);
+
+        let handle = thread::spawn(move || {
+            process_audio(rx_chunk, tx_bands, shutdown_thread);
+        });
+
+        tx_chunk.send(AudioFrame {
+            timestamp: Instant::now(),
+            samples: vec![],
+        }).unwrap();
+
+        assert!(rx_bands.recv_timeout(Duration::from_millis(300)).is_err());
+
+        shutdown.store(true, Ordering::SeqCst);
+
+        drop(tx_chunk);
+
+        handle.join().unwrap();
+    }
+
+    #[test]
+    fn process_detects_500hz_tone() {
+
+        let mut processor = Processor::new(CHUNK_SIZE);
+
+        let frequency = 500.0;
+
+        let signal: Vec<f32> = (0..CHUNK_SIZE)
+            .map(|n| {
+                (2.0 * std::f32::consts::PI
+                    * frequency
+                    * n as f32
+                    / SAMPLE_RATE)
+                    .sin()
+            })
+            .collect();
+
+        let bands = processor.process(&signal);
+
+        let max_band = bands
+            .iter()
+            .enumerate()
+            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+            .unwrap()
+            .0;
+
+
+        let band_limits = get_freq_lims(&CENTRAL_FREQS);
+
+        let expected_band = band_limits
+            .iter()
+            .position(|(low, high)| frequency >= *low && frequency < *high)
+            .unwrap();
+
+        assert_eq!(max_band, expected_band);
+    }
+}

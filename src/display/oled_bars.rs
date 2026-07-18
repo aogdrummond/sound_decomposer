@@ -1,4 +1,4 @@
-use crate::Error;
+use std::error::Error;
 use log::info;
 use crate::audio::source::AudioFrame;
 use crate::utils::utils::{to_db_display,
@@ -158,6 +158,11 @@ impl OledBars {
     }
 }
 
+fn reset_buffer(accumulated_values: &mut [f32], count: &mut usize){
+    accumulated_values.fill(0.0);
+    *count = 0;    
+}
+
 fn is_time_to_update(last_update: Instant, count:usize)-> bool{
     let is_time: bool = last_update.elapsed() >= Duration::from_millis(UPDATE_INTERVAL_MS) && count > 0;        
     is_time
@@ -169,5 +174,104 @@ fn compute_display_lvls(accumulated_values: &[f32],
     for i in 0..NUM_BANDS {
         let avg = to_db_display(accumulated_values[i] / count as f32); // db of average
         per_band_amplitude[i] = exponential_moving_average(per_band_amplitude[i],avg);
+    }
+}
+
+///////////////////////////////////////////////////////////
+/////////////////////TESTING SECTION///////////////////////
+///////////////////////////////////////////////////////////
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn compute_display_levels_from_average() {
+
+        let accumulated = [1.0; NUM_BANDS];
+        let mut levels = [0.0; NUM_BANDS];
+
+        compute_display_lvls(
+            &accumulated,
+            1,
+            &mut levels,
+        );
+
+        let expected =
+            exponential_moving_average(
+                0.0,
+                to_db_display(1.0),
+            );
+
+        for value in levels {
+            assert!((value - expected).abs() < 1e-4);
+        }
+    }
+
+    #[test]
+    fn compute_display_levels_preserves_previous_average() {
+
+        let accumulated = [1.0; NUM_BANDS];
+        let mut previous = [20.0; NUM_BANDS];
+
+        compute_display_lvls(
+            &accumulated,
+            1,
+            &mut previous,
+        );
+
+        let expected =
+            exponential_moving_average(
+                20.0,
+                to_db_display(1.0),
+            );
+
+        for value in previous {
+            assert!((value - expected).abs() < 1e-4);
+        }
+    }
+
+    #[test]
+    fn reset_buffer_clears_everything() {
+
+        let mut values = [10.0; NUM_BANDS];
+        let mut count = 15;
+
+        // this method would need to become a free function or a static helper
+        reset_buffer(&mut values, &mut count);
+
+        assert_eq!(count, 0);
+
+        for value in values {
+            assert_eq!(value, 0.0);
+        }
+    }
+
+    #[test]
+    fn update_is_false_when_no_frames_arrived() {
+
+        let last = Instant::now();
+
+        assert!(!is_time_to_update(last,0));
+    }
+
+    #[test]
+    fn update_is_false_before_timeout() {
+
+        let last = Instant::now();
+
+        assert!(!is_time_to_update(last,1));
+    }
+
+    #[test]
+    fn update_is_true_after_timeout() {
+
+        let last =
+            Instant::now()
+            - Duration::from_millis(
+                UPDATE_INTERVAL_MS + 1
+            );
+
+        assert!(is_time_to_update(last,1));
     }
 }

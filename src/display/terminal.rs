@@ -7,7 +7,7 @@ use std::sync::{
 use crate::audio::source::AudioFrame;
 use crate::utils::utils::to_db_display;
 use std::time::{Duration, Instant};
-use crate::Error;
+use std::error::Error;
 pub struct TerminalDisplay {}
 
 impl TerminalDisplay{

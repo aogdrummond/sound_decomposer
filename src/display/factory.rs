@@ -1,6 +1,11 @@
 use std::error::Error;
 use log::{info,trace,error,warn};
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool},
+    mpsc};
 
+use super::super::audio::source::AudioFrame;
 use super::{
     source::DisplaySource,
     oled_bars::OledBars,
@@ -80,4 +85,14 @@ where
             initialize_display_source(backup()?)
         }
     }
+}
+
+pub fn display_results(
+    mut source: Box<dyn DisplaySource>,
+    rx_bands: mpsc::Receiver<AudioFrame>,
+    shutdown: Arc<AtomicBool>,
+) 
+{
+    info!("Initiating display thread.");
+    source.display_results(rx_bands, shutdown);
 }
