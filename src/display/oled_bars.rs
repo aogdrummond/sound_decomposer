@@ -88,7 +88,7 @@ impl DisplaySource for OledBars {
                 for i in 0..NUM_BANDS {
                     band_acc[i] += frame.samples[i];
                 }
-
+                printf!("Dbfs Value: {}",frame.dbfs);
                 count += 1; //Every time count increases it means a new "chunk"
                 if is_time_to_update(last_update,count) {
                     self.update_display(&mut band_acc,&mut count, &mut accumulated_values);

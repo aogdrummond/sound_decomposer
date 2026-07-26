@@ -25,7 +25,7 @@ impl Processor {
         Self {fft,buffer: vec![Complex::new(0.0, 0.0); size],}
     }
 
-pub fn process(&mut self, chunk: &[f32]) -> Vec<f32> {
+pub fn process_frequencies(&mut self, chunk: &[f32]) -> Vec<f32> {
     
     let band_limits = get_freq_lims(&CENTRAL_FREQS);
 
@@ -73,6 +73,26 @@ pub fn process(&mut self, chunk: &[f32]) -> Vec<f32> {
 
     band_values
 }
+
+pub fn calculate_dbfs(samples: &[f32]) -> f32 {
+    if samples.is_empty() {
+        return f32::NEG_INFINITY;
+    }
+
+    let rms = (samples
+        .iter()
+        .map(|x| x * x)
+        .sum::<f32>()
+        / samples.len() as f32)
+        .sqrt();
+
+    if rms <= 0.0 {
+        return f32::NEG_INFINITY;
+    }
+
+    20.0 * rms.log10()
+}
+
 }
 pub fn get_freq_lims(central_freqs: &[f32]) -> Vec<(f32, f32)> {
     //(Panics if false)
@@ -123,13 +143,15 @@ pub fn process_audio(
                     continue;
                 } 
                 let start = Instant::now();
-                let bands = processor.process(&frame.samples);
+                let dbfs = processor.calculate_dbfs(&frame.samples);
+                let bands = processor.process_frequencies(&frame.samples);
                 let elapsed = start.elapsed().as_secs_f64() * 1000.0;
                 trace!("Elapsed: {:.3} ms", elapsed);
 
                 let frame2 = AudioFrame {
                     timestamp: Instant::now(),
-                    samples: bands,
+                    samples: bands,,
+                    dbfs: dbfs
                 };
 
                 if tx_bands.send(frame2).is_err() {

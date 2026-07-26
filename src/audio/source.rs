@@ -9,4 +9,5 @@ pub trait AudioSource: Send {
 pub struct AudioFrame {
     pub timestamp: Instant,
     pub samples: Vec<f32>,
+    pub dbfs: f32
 }
